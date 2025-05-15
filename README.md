@@ -41,6 +41,18 @@ sec-ch-ua: "Google Chrome";v="113", "Chromium";v="113", "Not-A.Brand";v="24"
 1. HttpServer：创建socket，监听8080端口，构造request、response处理请求
 2. Request：使用InputStream读取请求，解析请求uri
 3. Response：使用OutputStream处理响应
+# 规范Response
+常见的响应格式如下，包含状态行、请求头、空行、响应体：
+```http request
+HTTP/1.1 200 OK
+Content-Type: text/html
+Content-Length: 12
+
+Hello World!
+```
+1. 引入Servlet：支持动态资源
+2. 提取处理静态资源和动态资源的组件，ServletProcessor和StaticResourceProcessor
+3. HttpServer通过request.uri判断处理静态资源或动态资源
 
 
 
