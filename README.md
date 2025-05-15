@@ -53,6 +53,11 @@ Hello World!
 1. 引入Servlet：支持动态资源
 2. 提取处理静态资源和动态资源的组件，ServletProcessor和StaticResourceProcessor
 3. HttpServer通过request.uri判断处理静态资源或动态资源
+# 拆分HttpServer
+HttpServer包含连接请求、调用servlet、封装响应，工作太多，秉持单一原则，拆分成专门的类做相应的处理
+1. HttpConnector：处理连接
+2. HttpProcessor：处理请求分发，调用servlet
+3. 规范Request和Response，分别实现ServletRequest和ServletResponse
 
 
 

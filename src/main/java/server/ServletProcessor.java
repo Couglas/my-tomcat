@@ -2,13 +2,14 @@ package server;
 
 import org.apache.commons.lang3.text.StrSubstitutor;
 
+import javax.servlet.Servlet;
+import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.PrintWriter;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLStreamHandler;
-import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -41,35 +42,31 @@ public class ServletProcessor {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        // 获取printWriter
+        PrintWriter writer = null;
+        try {
+            response.setCharacterEncoding("UTF-8");
+            writer = response.getWriter();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         // 加载Servlet
         String servletName = uri.substring(uri.lastIndexOf("/") + 1);
         Class<?> serverClass = null;
-
         try {
             serverClass = loader.loadClass(servletName);
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
         // 写响应头
-        OutputStream output = response.getOutput();
         String head = composeResponseHead();
-        try {
-            output.write(head.getBytes(StandardCharsets.UTF_8));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        writer.println(head);
         // 创建servlet实例，调用service
         Servlet servlet = null;
         try {
             servlet = (Servlet) serverClass.newInstance();
             servlet.service(request, response);
-        } catch (InstantiationException | IllegalAccessException | IOException e) {
-            e.printStackTrace();
-        }
-        // 输出
-        try {
-            output.flush();
-        } catch (IOException e) {
+        } catch (InstantiationException | IllegalAccessException | IOException | ServletException e) {
             e.printStackTrace();
         }
     }
