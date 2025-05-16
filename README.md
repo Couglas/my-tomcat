@@ -58,8 +58,12 @@ HttpServer包含连接请求、调用servlet、封装响应，工作太多，秉
 1. HttpConnector：处理连接
 2. HttpProcessor：处理请求分发，调用servlet
 3. 规范Request和Response，分别实现ServletRequest和ServletResponse
-
-
+# 异步化改造Processor
+接收到请求之后每次新建processor然后同步处理，这样服务的开销较多且无法同时处理多个请求。
+改进的思路是，processor引入池化技术，减少构造对象的开销，然后引入多线程技术，使用不同的线程执行connector和processor，即主线程启动connector并监听端口获取socket，获取到后分配给一个processor去处理该请求；每个线程启动一个processor等待socket到来，然后处理请求，执行完后回收当前processor，当前线程挂起继续等待下个socket到来。需要注意的点是要要仔细处理线程同步代码，防止死锁等问题发生。
+1. processor实现Runnable接口，添加标志位用于判断当前是否有socket就位
+2. connector实现Runnable接口，添加一个队列的processor当做处理池，启动时初始化一定数量的processor，并新建线程启动它。每次从中获取一个processor
+这样一来，一个connector服务多个processor，且都是异步处理，提升并发访问的能力。
 
 
 
