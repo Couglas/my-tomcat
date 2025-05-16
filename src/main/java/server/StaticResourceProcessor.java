@@ -33,7 +33,7 @@ public class StaticResourceProcessor {
             + "\r\n";
 
 
-    public void process(HttpRequest request, Response response) throws IOException {
+    public void process(HttpRequest request, HttpResponse response) throws IOException {
         byte[] bytes = new byte[BUFFER_SIZE];
         FileInputStream fis = null;
         OutputStream output = null;

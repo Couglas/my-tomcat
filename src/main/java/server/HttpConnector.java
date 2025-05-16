@@ -40,7 +40,6 @@ public class HttpConnector implements Runnable {
             try {
                 socket = serverSocket.accept();
                 HttpProcessor processor = createProcessor();
-                System.out.println("processors num: " + processors.size());
                 if (processor == null) {
                     socket.close();
                     continue;

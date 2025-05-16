@@ -68,7 +68,7 @@ HttpServer包含连接请求、调用servlet、封装响应，工作太多，秉
 1. 新增HttpRequest实现HttpServletRequest
 2. 新增HttpResponse实现HttpServletResponse
 3. 引入SocketInputStream，按行读取请求信息，解析requestLine和header信息
-
+4. 新增HttpRequestFacade与HttpResponseFacade，封装内部方法。
 
 
 
