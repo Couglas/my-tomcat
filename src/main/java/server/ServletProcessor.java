@@ -28,7 +28,7 @@ public class ServletProcessor {
             + "Date: ${ZonedDateTime}\r\n"
             + "\r\n";
 
-    public void process(Request request, Response response) {
+    public void process(HttpRequest request, Response response) {
         String uri = request.getUri();
         // 构造类加载器
         URLClassLoader loader = null;

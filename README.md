@@ -64,6 +64,10 @@ HttpServer包含连接请求、调用servlet、封装响应，工作太多，秉
 1. processor实现Runnable接口，添加标志位用于判断当前是否有socket就位
 2. connector实现Runnable接口，添加一个队列的processor当做处理池，启动时初始化一定数量的processor，并新建线程启动它。每次从中获取一个processor
 这样一来，一个connector服务多个processor，且都是异步处理，提升并发访问的能力。
+# 适配Servlet规范
+1. 新增HttpRequest实现HttpServletRequest
+2. 新增HttpResponse实现HttpServletResponse
+3. 引入SocketInputStream，按行读取请求信息，解析requestLine和header信息
 
 
 

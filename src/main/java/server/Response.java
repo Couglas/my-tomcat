@@ -12,7 +12,7 @@ import java.util.Locale;
  * @since 2025/5/14
  */
 public class Response implements ServletResponse {
-    private Request request;
+    private HttpRequest request;
     private OutputStream output;
     private String characterEncoding;
 
@@ -20,7 +20,7 @@ public class Response implements ServletResponse {
         this.output = output;
     }
 
-    public void setRequest(Request request) {
+    public void setRequest(HttpRequest request) {
         this.request = request;
     }
 
