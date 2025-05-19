@@ -25,8 +25,14 @@ public class HttpRequest implements HttpServletRequest {
     private InetAddress address;
     private int port;
     private Map<String, String> headers = new HashMap<>();
-    private Map<String, String> parameters = new ConcurrentHashMap<>();
+    private Map<String, String[]> parameters = new ConcurrentHashMap<>();
     private HttpRequestLine requestLine = new HttpRequestLine();
+    private String queryString;
+    private boolean parsed = false;
+    private HttpSession session;
+    private String sessionid;
+    private SessionFacade sessionFacade;
+    private Cookie[] cookies;
 
     public HttpRequest(InputStream input) {
         this.input = input;
@@ -37,11 +43,149 @@ public class HttpRequest implements HttpServletRequest {
         try {
             parseConnection(socket);
             this.sis.readRequestLine(requestLine);
+            parseRequestLine();
             parseHeaders();
         } catch (IOException | ServletException e) {
             e.printStackTrace();
         }
         this.uri = new String(requestLine.uri, 0, requestLine.uriEnd);
+    }
+
+    private void parseRequestLine() {
+        int pos = requestLine.indexOf("?");
+        if (pos >= 0) {
+            queryString = new String(requestLine.uri, pos + 1, requestLine.uriEnd - pos - 1);
+            uri = new String(requestLine.uri, 0, pos);
+        } else {
+            queryString = null;
+            uri = new String(requestLine.uri, 0, requestLine.uriEnd);
+        }
+
+        int semicolon = uri.indexOf(DefaultHeaders.JSESSIONID_NAME);
+        if (semicolon >= 0) {
+            sessionid = uri.substring(semicolon + DefaultHeaders.JSESSIONID_NAME.length());
+            uri = uri.substring(0, semicolon);
+        }
+    }
+
+    private void parseParameters() {
+        String encoding = getCharacterEncoding();
+        System.out.println("encoding: " + encoding);
+        if (encoding == null) {
+            encoding = "ISO-8859-1";
+        }
+
+        String qs = getQueryString();
+        System.out.println("qs: " + qs);
+        if (qs != null) {
+            byte[] bytes = new byte[qs.length()];
+            try {
+                bytes = qs.getBytes(encoding);
+                parseParameters(this.parameters, bytes, encoding);
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+        }
+
+        String contentType = getContentType();
+        if (contentType == null) {
+            contentType = "";
+        }
+        int semicolon = contentType.indexOf(";");
+        if (semicolon >= 0) {
+            contentType = contentType.substring(0, semicolon).trim();
+        } else {
+            contentType = contentType.trim();
+        }
+
+        if ("POST".equals(getMethod()) && getContentLength() > 0 && "application/x-www-form-urlencoded".equals(contentType)) {
+            try {
+                int max = getContentLength();
+                int len = 0;
+                byte[] buf = new byte[max];
+                ServletInputStream is = getInputStream();
+                while (len < max) {
+                    int next = is.read(buf, len, max - len);
+                    if (next < 0) {
+                        break;
+                    }
+                    len += next;
+                }
+                is.close();
+                if (len < max) {
+                    throw new RuntimeException("content length mismatch");
+                }
+                parseParameters(this.parameters, buf, encoding);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void parseParameters(Map<String, String[]> map, byte[] data, String encoding) throws UnsupportedEncodingException {
+        if (parsed) {
+            return;
+        }
+        System.out.println("data: " + data);
+        if (data != null && data.length > 0) {
+            int pos = 0;
+            int ix = 0;
+            int ox = 0;
+            String key = null;
+            String value = null;
+            while (ix < data.length) {
+                byte c = data[ix++];
+                switch ((char) c) {
+                    case '&':
+                        value = new String(data, 0, ox, encoding);
+                        if (key != null) {
+                            putMapEntry(map, key, value);
+                            key = null;
+                        }
+                        ox = 0;
+                        break;
+                    case '=':
+                        key = new String(data, 0, ox, encoding);
+                        ox = 0;
+                        break;
+                    case '+':
+                        data[ox++] = (byte) ' ';
+                        break;
+                    case '%':
+                        data[ox++] = (byte)((convertHexDigit(data[ix++]) << 4) + convertHexDigit(data[ix++]));
+                        break;
+                    default:
+                        data[ox++] = c;
+                }
+            }
+        }
+    }
+
+    private byte convertHexDigit(byte b) {
+        if (b >= '0' && b <= '9') {
+            return (byte) (b - '0');
+        }
+        if (b >= 'a' && b <= 'f') {
+            return (byte) (b - 'a' + 10);
+        }
+        if (b >= 'A' && b <= 'F') {
+            return (byte) (b - 'A' + 10);
+        }
+        return 0;
+    }
+
+    private void putMapEntry(Map<String, String[]> map, String key, String value) {
+        String[] newValues = null;
+        String[] oldValues = map.get(key);
+        if (oldValues == null) {
+            newValues = new String[1];
+            newValues[0] = value;
+        } else {
+            newValues = new String[oldValues.length + 1];
+            System.arraycopy(oldValues, 0, newValues, 0, oldValues.length);
+            newValues[oldValues.length] = value;
+        }
+        map.put(key, newValues);
     }
 
     private void parseHeaders() throws IOException, ServletException {
@@ -62,8 +206,46 @@ public class HttpRequest implements HttpServletRequest {
                     || name.equals(DefaultHeaders.TRANSFER_ENCODING_NAME) || name.equals(DefaultHeaders.CONNECTION_NAME)
             ) {
                 headers.put(name, value);
+            } else if(name.equals(DefaultHeaders.COOKIE_NAME)) {
+                headers.put(name, value);
+                this.cookies = parseCookieHeader(value);
+                for (Cookie cookie : cookies) {
+                    if (cookie.getName().equals("jsessionid")) {
+                        this.sessionid = cookie.getValue();
+                    }
+                }
             }
         }
+    }
+
+    private Cookie[] parseCookieHeader(String header) {
+        if (header == null || header.length() < 1) {
+            return new Cookie[0];
+        }
+        ArrayList<Cookie> cookieList = new ArrayList<>();
+        while (!header.isEmpty()) {
+            int semicolon = header.indexOf(";");
+            if (semicolon < 0) {
+                semicolon = header.length();
+            }
+            if (semicolon == 0) {
+                break;
+            }
+
+            String token = header.substring(0, semicolon);
+            if (semicolon < header.length()) {
+                header = header.substring(semicolon + 1);
+            } else {
+                header = "";
+            }
+            int equals = token.indexOf("=");
+            if (equals > 0) {
+                String name = token.substring(0, equals).trim();
+                String value = token.substring(equals + 1).trim();
+                cookieList.add(new Cookie(name, value));
+            }
+        }
+        return cookieList.toArray(new Cookie[0]);
     }
 
     private void parseConnection(Socket socket) throws IOException {
@@ -83,7 +265,7 @@ public class HttpRequest implements HttpServletRequest {
 
     @Override
     public Cookie[] getCookies() {
-        return new Cookie[0];
+        return this.cookies;
     }
 
     @Override
@@ -133,7 +315,7 @@ public class HttpRequest implements HttpServletRequest {
 
     @Override
     public String getQueryString() {
-        return null;
+        return this.queryString;
     }
 
     @Override
@@ -173,12 +355,31 @@ public class HttpRequest implements HttpServletRequest {
 
     @Override
     public HttpSession getSession(boolean b) {
-        return null;
+        if (sessionFacade != null) {
+            return sessionFacade;
+        }
+        if (sessionid != null) {
+            session = HttpConnector.sessions.get(sessionid);
+            if (session == null) {
+                session = HttpConnector.createSession();
+            }
+            sessionFacade = new SessionFacade(session);
+            return sessionFacade;
+        }
+
+        session = HttpConnector.createSession();
+        sessionFacade = new SessionFacade(session);
+        sessionid = session.getId();
+        return sessionFacade;
     }
 
     @Override
     public HttpSession getSession() {
-        return null;
+        return this.sessionFacade;
+    }
+
+    public String getSessionId() {
+        return this.sessionid;
     }
 
     @Override
@@ -248,7 +449,7 @@ public class HttpRequest implements HttpServletRequest {
 
     @Override
     public String getCharacterEncoding() {
-        return null;
+        return headers.get(DefaultHeaders.TRANSFER_ENCODING_NAME);
     }
 
     @Override
@@ -268,32 +469,40 @@ public class HttpRequest implements HttpServletRequest {
 
     @Override
     public String getContentType() {
-        return null;
+        return headers.get(DefaultHeaders.CONTENT_TYPE_NAME);
     }
 
     @Override
     public ServletInputStream getInputStream() throws IOException {
-        return null;
+        return this.sis;
     }
 
     @Override
     public String getParameter(String s) {
+        parseParameters();
+        String[] values = parameters.get(s);
+        if (values != null) {
+            return values[0];
+        }
         return null;
     }
 
     @Override
     public Enumeration<String> getParameterNames() {
-        return null;
+        parseParameters();
+        return Collections.enumeration(parameters.keySet());
     }
 
     @Override
     public String[] getParameterValues(String s) {
-        return new String[0];
+        parseParameters();
+        return parameters.get(s);
     }
 
     @Override
     public Map<String, String[]> getParameterMap() {
-        return null;
+        parseParameters();
+        return this.parameters;
     }
 
     @Override

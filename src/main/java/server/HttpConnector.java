@@ -1,11 +1,15 @@
 package server;
 
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * http连接器
@@ -18,6 +22,7 @@ public class HttpConnector implements Runnable {
     private int maxProcessors = 10;
     private int curProcessors = 0;
     private Deque<HttpProcessor> processors = new ArrayDeque<>();
+    public static Map<String, HttpSession> sessions = new ConcurrentHashMap<>();
 
     public HttpConnector() {
         initProcessors();
@@ -88,5 +93,43 @@ public class HttpConnector implements Runnable {
 
     public void recycle(HttpProcessor processor) {
         processors.push(processor);
+    }
+
+    public static Session createSession() {
+        Session session = new Session();
+        session.setValid(true);
+        session.setCreationTime(System.currentTimeMillis());
+        String sessionId = generateSessionId();
+        session.setId(sessionId);
+        sessions.put(sessionId, session);
+        return session;
+    }
+
+    private static String generateSessionId() {
+        Random random = new Random();
+        long seed = System.currentTimeMillis();
+        random.setSeed(seed);
+        byte[] bytes = new byte[16];
+        random.nextBytes(bytes);
+        StringBuffer result = new StringBuffer();
+        for (int i = 0; i < bytes.length; i++) {
+            byte b1 = (byte) ((bytes[i] & 0xf0) >> 4);
+            byte b2 = (byte) (bytes[i] & 0x0f);
+            if (b1 < 10) {
+                result.append((char) ('0' + b1));
+            } else {
+                result.append((char) ('A' + (b1 - 10)));
+            }
+            if (b2 < 10) {
+                result.append((char) ('0' + b2));
+            } else {
+                result.append((char) ('A' + (b2 - 10)));
+            }
+        }
+        return result.toString();
+    }
+
+    public static void main(String[] args) {
+        System.out.println(generateSessionId());
     }
 }

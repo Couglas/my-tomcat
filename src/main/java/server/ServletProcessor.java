@@ -49,6 +49,7 @@ public class ServletProcessor {
         Servlet servlet = null;
         try {
             servlet = (Servlet) serverClass.newInstance();
+            System.out.println("call servlet");
             servlet.service(new HttpRequestFacade(request), new HttpResponseFacade(response));
         } catch (InstantiationException | IllegalAccessException | IOException | ServletException e) {
             e.printStackTrace();

@@ -69,6 +69,11 @@ HttpServer包含连接请求、调用servlet、封装响应，工作太多，秉
 2. 新增HttpResponse实现HttpServletResponse
 3. 引入SocketInputStream，按行读取请求信息，解析requestLine和header信息
 4. 新增HttpRequestFacade与HttpResponseFacade，封装内部方法。
+# 解析请求参数和Header
+1. 根据get和post请求参数格式，在request中实现解析方法，且在真正获取参数时才调用解析方法。解析的结果放到request中的map中
+2. 支持cookie和session：
+   1. cookie放在header中，格式固定是：```Cookie: userName=xxxx;password=pwd;```。解析header时发现名称是Cookie，就解析其值，request中可以包含多个cookie，因此用数组存放
+   2. 服务给每个请求创建一个Session，存储用户状态，用一个map存储，放到connector中管理。jsessionid一般存在Cookie或Url中，浏览器和服务的交互都携带这个sessionid。
 
 
 

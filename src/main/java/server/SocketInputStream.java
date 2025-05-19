@@ -1,5 +1,7 @@
 package server;
 
+import javax.servlet.ReadListener;
+import javax.servlet.ServletInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -12,7 +14,7 @@ import java.io.InputStream;
  * @author zhenxingchen4
  * @since 2025/5/16
  */
-public class SocketInputStream extends InputStream {
+public class SocketInputStream extends ServletInputStream {
     private static final byte CR = '\r';
     private static final byte LF = '\n';
     private static final byte SP = ' ';
@@ -33,7 +35,11 @@ public class SocketInputStream extends InputStream {
         // 跳过空行
         int chr = 0;
         do {
-            chr = read();
+            try {
+                chr = read();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         } while ((chr == CR) || (chr == LF));
         pos--;
         // 解析method，以空格结束
@@ -235,5 +241,20 @@ public class SocketInputStream extends InputStream {
         is.close();
         is = null;
         buf = null;
+    }
+
+    @Override
+    public boolean isFinished() {
+        return false;
+    }
+
+    @Override
+    public boolean isReady() {
+        return false;
+    }
+
+    @Override
+    public void setReadListener(ReadListener readListener) {
+
     }
 }
