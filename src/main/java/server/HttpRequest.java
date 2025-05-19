@@ -33,10 +33,20 @@ public class HttpRequest implements HttpServletRequest {
     private String sessionid;
     private SessionFacade sessionFacade;
     private Cookie[] cookies;
+    private HttpServletResponse response;
 
     public HttpRequest(InputStream input) {
         this.input = input;
         this.sis = new SocketInputStream(this.input, 2048);
+    }
+
+    public void setStream(InputStream input) {
+        this.input = input;
+        this.sis = new SocketInputStream(this.input, 2048);
+    }
+
+    public void setResponse(HttpServletResponse response) {
+        this.response = response;
     }
 
     public void parse(Socket socket) {
@@ -48,7 +58,6 @@ public class HttpRequest implements HttpServletRequest {
         } catch (IOException | ServletException e) {
             e.printStackTrace();
         }
-        this.uri = new String(requestLine.uri, 0, requestLine.uriEnd);
     }
 
     private void parseRequestLine() {
@@ -61,9 +70,10 @@ public class HttpRequest implements HttpServletRequest {
             uri = new String(requestLine.uri, 0, requestLine.uriEnd);
         }
 
-        int semicolon = uri.indexOf(DefaultHeaders.JSESSIONID_NAME);
+        String jsessionid = ";" + DefaultHeaders.JSESSIONID_NAME + "=";
+        int semicolon = uri.indexOf(jsessionid);
         if (semicolon >= 0) {
-            sessionid = uri.substring(semicolon + DefaultHeaders.JSESSIONID_NAME.length());
+            sessionid = uri.substring(semicolon + jsessionid.length());
             uri = uri.substring(0, semicolon);
         }
     }
@@ -158,7 +168,12 @@ public class HttpRequest implements HttpServletRequest {
                         data[ox++] = c;
                 }
             }
+            if (key != null) {
+                value = new String(data, 0, ox, encoding);
+                putMapEntry(map, key, value);
+            }
         }
+        parsed = true;
     }
 
     private byte convertHexDigit(byte b) {
@@ -201,25 +216,36 @@ public class HttpRequest implements HttpServletRequest {
             }
             String name = new String(header.name, 0, header.nameEnd);
             String value = new String(header.value, 0, header.valueEnd);
-            if (name.equals(DefaultHeaders.ACCEPT_LANGUAGE_NAME) || name.equals(DefaultHeaders.CONTENT_LENGTH_NAME)
-                    || name.equals(DefaultHeaders.CONTENT_TYPE_NAME) || name.equals(DefaultHeaders.HOST_NAME)
-                    || name.equals(DefaultHeaders.TRANSFER_ENCODING_NAME) || name.equals(DefaultHeaders.CONNECTION_NAME)
-            ) {
-                headers.put(name, value);
-            } else if(name.equals(DefaultHeaders.COOKIE_NAME)) {
-                headers.put(name, value);
-                this.cookies = parseCookieHeader(value);
-                for (Cookie cookie : cookies) {
-                    if (cookie.getName().equals("jsessionid")) {
-                        this.sessionid = cookie.getValue();
+            name = name.toLowerCase();
+            switch (name) {
+                case DefaultHeaders.ACCEPT_LANGUAGE_NAME:
+                case DefaultHeaders.CONTENT_LENGTH_NAME:
+                case DefaultHeaders.CONTENT_TYPE_NAME:
+                case DefaultHeaders.HOST_NAME:
+                case DefaultHeaders.TRANSFER_ENCODING_NAME:
+                    headers.put(name, value);
+                    break;
+                case DefaultHeaders.COOKIE_NAME:
+                    headers.put(name, value);
+                    this.cookies = parseCookieHeader(value);
+                    for (Cookie cookie : cookies) {
+                        if (cookie.getName().equals("jsessionid")) {
+                            this.sessionid = cookie.getValue();
+                        }
                     }
-                }
+                    break;
+                case DefaultHeaders.CONNECTION_NAME:
+                    headers.put(name, value);
+                    if (value.equals("close")) {
+                        response.setHeader("Connection", "close");
+                    }
+                    break;
             }
         }
     }
 
     private Cookie[] parseCookieHeader(String header) {
-        if (header == null || header.length() < 1) {
+        if (header == null || header.isEmpty()) {
             return new Cookie[0];
         }
         ArrayList<Cookie> cookieList = new ArrayList<>();
@@ -459,7 +485,7 @@ public class HttpRequest implements HttpServletRequest {
 
     @Override
     public int getContentLength() {
-        return 0;
+        return Integer.parseInt(headers.get(DefaultHeaders.CONTENT_LENGTH_NAME));
     }
 
     @Override

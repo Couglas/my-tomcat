@@ -15,46 +15,56 @@ public class HttpProcessor implements Runnable {
     private Socket socket;
     private boolean available = false;
     private HttpConnector connector;
+    private int serverPort = 0;
+    private boolean keepAlive = false;
+    private boolean http11 = true;
 
     public HttpProcessor(HttpConnector connector) {
         this.connector = connector;
     }
 
     public void process(Socket socket) {
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-
         InputStream input = null;
         OutputStream output = null;
         try {
             input = socket.getInputStream();
             output = socket.getOutputStream();
+            keepAlive = true;
+            while (keepAlive) {
+                HttpRequest request = new HttpRequest(input);
+                request.parse(socket);
 
-            HttpRequest request = new HttpRequest(input);
-            request.parse(socket);
+                if (request.getSessionId() == null || request.getSessionId().isEmpty()) {
+                    request.getSession(true);
+                }
 
-            if (request.getSessionId() == null || request.getSessionId().isEmpty()) {
-                request.getSession(true);
-            }
+                HttpResponse response = new HttpResponse(output);
+                response.setRequest(request);
+                request.setResponse(response);
+                response.sendHeaders();
 
-            HttpResponse response = new HttpResponse(output);
-            response.setRequest(request);
-
-            if (request.getUri().startsWith("/servlet/")) {
-                ServletProcessor processor = new ServletProcessor();
-                processor.process(request, response);
-            } else {
-                StaticResourceProcessor processor = new StaticResourceProcessor();
-                processor.process(request, response);
+                if (request.getUri().startsWith("/servlet/")) {
+                    ServletProcessor processor = new ServletProcessor();
+                    processor.process(request, response);
+                } else {
+                    StaticResourceProcessor processor = new StaticResourceProcessor();
+                    processor.process(request, response);
+                }
+                finishResponse(response);
+                System.out.println("response header connection: " + response.getHeader("Connection"));
+                if ("close".equals(response.getHeader("Connection"))) {
+                    keepAlive = false;
+                }
             }
 
             socket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void finishResponse(HttpResponse response) {
+        response.finishResponse();
     }
 
     @Override

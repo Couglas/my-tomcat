@@ -74,7 +74,9 @@ HttpServer包含连接请求、调用servlet、封装响应，工作太多，秉
 2. 支持cookie和session：
    1. cookie放在header中，格式固定是：```Cookie: userName=xxxx;password=pwd;```。解析header时发现名称是Cookie，就解析其值，request中可以包含多个cookie，因此用数组存放
    2. 服务给每个请求创建一个Session，存储用户状态，用一个map存储，放到connector中管理。jsessionid一般存在Cookie或Url中，浏览器和服务的交互都携带这个sessionid。
-
+   3. response设置生成的sessionid到响应头```jsessionid=6DB16341D13D83D72B725A0C3A16C4DB```
+3. 模拟实现长连接。
+   http1.1的实现采用Connection:keep-alive和Transfer-encoding:chunked头来表明数据通过chunked块来传输数据，块的格式是固定的```[chunk size][\r\n][chunk data][\r\n][chunk size][\r\n][chunk data][\r\n] …… [chunk size = 0][\r\n][\r\n]```。根据这个格式，只需要在HttpProcessor中判断keep-alive判断，以及chunk块大小是否为0来决定是否关闭socket。
 
 
 

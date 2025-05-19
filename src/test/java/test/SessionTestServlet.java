@@ -14,11 +14,18 @@ import java.io.IOException;
  * @since 2025/5/19
  */
 public class SessionTestServlet extends HttpServlet {
+    static int count = 0;
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         System.out.println("test do get");
         System.out.println("param name : " + req.getParameter("name"));
+
+        SessionTestServlet.count++;
+        System.out.println("count: " + SessionTestServlet.count);
+        if (count > 2) {
+            resp.addHeader("Connection", "close");
+        }
         HttpSession session = req.getSession(true);
         String user = (String) session.getAttribute("user");
         System.out.println("user from session: " + user);

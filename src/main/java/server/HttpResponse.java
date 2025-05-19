@@ -3,14 +3,12 @@ package server;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -26,13 +24,15 @@ public class HttpResponse implements HttpServletResponse {
     private String contentType = null;
     private long contentLength = -1;
     private String charset = null;
-    private String characterEncoding = null;
+    private String characterEncoding = "UTF-8";
     private String protocol = "HTTP/1.1";
-
     Map<String, String> headers = new ConcurrentHashMap<>();
     private String message = getStatusMessage(HttpServletResponse.SC_OK);
-
     private int status = HttpServletResponse.SC_OK;
+    private List<Cookie> cookies = new ArrayList<>();
+
+    public HttpResponse() {
+    }
 
     public HttpResponse(OutputStream output) {
         this.output = output;
@@ -48,6 +48,18 @@ public class HttpResponse implements HttpServletResponse {
 
     public OutputStream getOutput() {
         return this.output;
+    }
+
+    public void setOutput(OutputStream output) {
+        this.output = output;
+    }
+
+    public void finishResponse() {
+        try {
+            this.getWriter().flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private String getStatusMessage(int status) {
@@ -106,13 +118,36 @@ public class HttpResponse implements HttpServletResponse {
             outputWriter.print(value);
             outputWriter.print("\r\n");
         }
+        HttpSession session = this.request.getSession(false);
+        if (session != null) {
+            Cookie cookie = new Cookie(DefaultHeaders.JSESSIONID_NAME, session.getId());
+            cookie.setMaxAge(-1);
+            addCookie(cookie);
+        }
+
+        synchronized (cookies) {
+            Iterator<Cookie> cookieIterator = cookies.iterator();
+            while (cookieIterator.hasNext()) {
+                Cookie cookie = cookieIterator.next();
+                outputWriter.print(CookieTools.getCookieHeaderName(cookie));
+                outputWriter.print(": ");
+                StringBuffer sb = new StringBuffer();
+                CookieTools.getCookieHeaderValue(cookie, sb);
+                System.out.println("set cookie jsessionid: " + sb);
+                outputWriter.print(sb);
+                outputWriter.print("\r\n");
+            }
+        }
+
         outputWriter.print("\r\n");
         outputWriter.flush();
     }
 
     @Override
     public void addCookie(Cookie cookie) {
-
+        synchronized (cookies) {
+            cookies.add(cookie);
+        }
     }
 
     @Override
