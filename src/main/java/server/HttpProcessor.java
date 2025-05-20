@@ -1,5 +1,6 @@
 package server;
 
+import javax.servlet.ServletException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -44,7 +45,7 @@ public class HttpProcessor implements Runnable {
                 response.sendHeaders();
 
                 if (request.getUri().startsWith("/servlet/")) {
-                    ServletProcessor processor = new ServletProcessor();
+                    ServletProcessor processor = new ServletProcessor(this.connector);
                     processor.process(request, response);
                 } else {
                     StaticResourceProcessor processor = new StaticResourceProcessor();
@@ -59,6 +60,8 @@ public class HttpProcessor implements Runnable {
 
             socket.close();
         } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ServletException e) {
             e.printStackTrace();
         }
     }

@@ -18,6 +18,9 @@ public class HttpServer {
 
     public void await() {
         HttpConnector connector = new HttpConnector();
+        ServletContainer container = new ServletContainer();
+        connector.setContainer(container);
+        container.setConnector(connector);
         connector.start();
     }
 }

@@ -77,6 +77,11 @@ HttpServer包含连接请求、调用servlet、封装响应，工作太多，秉
    3. response设置生成的sessionid到响应头```jsessionid=6DB16341D13D83D72B725A0C3A16C4DB```
 3. 模拟实现长连接。
    http1.1的实现采用Connection:keep-alive和Transfer-encoding:chunked头来表明数据通过chunked块来传输数据，块的格式是固定的```[chunk size][\r\n][chunk data][\r\n][chunk size][\r\n][chunk data][\r\n] …… [chunk size = 0][\r\n][\r\n]```。根据这个格式，只需要在HttpProcessor中判断keep-alive判断，以及chunk块大小是否为0来决定是否关闭socket。
+# 拆分Connector
+connector应该只关注连接的管理和分发，具体的Servlet管理交给专门的角色来处理，分工更明确
+1. 新增ServletContainer：使用类加载器加载实例化servlet，用一个map管理已经实例化的servlet，对外提供根据请求uri调用对应servlet的方法invoke
+2. 新增ServletWrapper：直接使用Container管理Servlet，相对比较繁琐，每个servlet都需要处理它的声明周期等，引入ServletWrapper去处理具体Servlet的生成和加载，ServletContainer只管理这些wrapper即可。
+
 
 
 
