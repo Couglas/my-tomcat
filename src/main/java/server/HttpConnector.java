@@ -23,17 +23,17 @@ public class HttpConnector implements Runnable {
     private int curProcessors = 0;
     private Deque<HttpProcessor> processors = new ArrayDeque<>();
     public static Map<String, HttpSession> sessions = new ConcurrentHashMap<>();
-    private ServletContainer container;
+    private ServletContext container;
 
     public HttpConnector() {
         initProcessors();
     }
 
-    public void setContainer(ServletContainer container) {
+    public void setContainer(ServletContext container) {
         this.container = container;
     }
 
-    public ServletContainer getContainer() {
+    public ServletContext getContainer() {
         return container;
     }
 

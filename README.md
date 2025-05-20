@@ -81,6 +81,11 @@ HttpServer包含连接请求、调用servlet、封装响应，工作太多，秉
 connector应该只关注连接的管理和分发，具体的Servlet管理交给专门的角色来处理，分工更明确
 1. 新增ServletContainer：使用类加载器加载实例化servlet，用一个map管理已经实例化的servlet，对外提供根据请求uri调用对应servlet的方法invoke
 2. 新增ServletWrapper：直接使用Container管理Servlet，相对比较繁琐，每个servlet都需要处理它的声明周期等，引入ServletWrapper去处理具体Servlet的生成和加载，ServletContainer只管理这些wrapper即可。
+# 构造多层容器
+参照tomcat的框架层级，一个server对外提供http服务，内部支持多个虚拟主机，每个主机又有多个应用，每个应用包含多个servlet。简单起见，只实现context和wrapper两层，也足够弄清tomcat多层容器的概念
+1. 抽象Container接口：对外提供get、set父、子容器和处理请求的invoke方法等
+2. 新增ContainerBase类，实现Container接口：提供容器的默认实现，内部用map维护多个子容器，一个容器属性作为父容器
+3. 修改ServletContainer名称为ServletContext、ServletWrapper，继承ContainerBase类，实现相应方法，改造为相应的两个容器
 
 
 

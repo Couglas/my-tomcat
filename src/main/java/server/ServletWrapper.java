@@ -12,14 +12,11 @@ import java.io.IOException;
  * @author zhenxingchen4
  * @since 2025/5/20
  */
-public class ServletWrapper {
+public class ServletWrapper extends ContainerBase {
     private Servlet instance = null;
     private String servletClass;
-    private ClassLoader loader;
-    private String name;
-    private ServletContainer parent = null;
 
-    public ServletWrapper(String servletClass, ServletContainer parent) {
+    public ServletWrapper(String servletClass, ServletContext parent) {
         this.parent = parent;
         this.servletClass = servletClass;
         try {
@@ -29,11 +26,9 @@ public class ServletWrapper {
         }
     }
 
-    public ClassLoader getLoader() {
-        if (loader != null) {
-            return loader;
-        }
-        return parent.getLoader();
+    @Override
+    public String getInfo() {
+        return "My Servlet Wrapper, version 0.1";
     }
 
     public String getServletClass() {
@@ -42,14 +37,6 @@ public class ServletWrapper {
 
     public void setServletClass(String servletClass) {
         this.servletClass = servletClass;
-    }
-
-    public ServletContainer getParent() {
-        return parent;
-    }
-
-    public void setParent(ServletContainer parent) {
-        this.parent = parent;
     }
 
     public Servlet getServlet() {
@@ -89,9 +76,30 @@ public class ServletWrapper {
         return servlet;
     }
 
+    @Override
     public void invoke(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         if (instance != null) {
             instance.service(req, resp);
         }
+    }
+
+    @Override
+    public void addChild(Container child) {
+
+    }
+
+    @Override
+    public Container findChild(String name) {
+        return null;
+    }
+
+    @Override
+    public Container[] findChildren() {
+        return null;
+    }
+
+    @Override
+    public void removeChild(Container child) {
+
     }
 }

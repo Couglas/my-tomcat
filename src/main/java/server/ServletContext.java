@@ -1,6 +1,8 @@
 package server;
 
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -15,13 +17,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author zhenxingchen4
  * @since 2025/5/20
  */
-public class ServletContainer {
+public class ServletContext extends ContainerBase {
     private HttpConnector connector = null;
     private ClassLoader loader = null;
     Map<String, String> servletClassMap = new ConcurrentHashMap<>();
     Map<String, ServletWrapper> servletInstanceMap = new ConcurrentHashMap<>();
 
-    public ServletContainer() {
+    public ServletContext() {
         try {
             URL[] urls = new URL[1];
             URLStreamHandler streamHandler = null;
@@ -34,14 +36,17 @@ public class ServletContainer {
         }
     }
 
+    @Override
     public String getInfo() {
-        return null;
+        return "My Servlet Context, version 0.1";
     }
 
+    @Override
     public ClassLoader getLoader() {
         return this.loader;
     }
 
+    @Override
     public void setLoader(ClassLoader loader) {
         this.loader = loader;
     }
@@ -54,17 +59,10 @@ public class ServletContainer {
         this.connector = connector;
     }
 
-    public String getName() {
-        return null;
-    }
-
-    public void setName() {
-
-    }
-
-    public void invoke(HttpRequest request, HttpResponse response) throws IOException, ServletException {
+    @Override
+    public void invoke(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         ServletWrapper servlet = null;
-        String uri = request.getUri();
+        String uri = ((HttpRequest) request).getUri();
         String servletName = uri.substring(uri.lastIndexOf("/") + 1);
         servlet = servletInstanceMap.get(servletName);
         if (servlet == null) {
@@ -74,8 +72,8 @@ public class ServletContainer {
         }
 
         try {
-            HttpRequestFacade requestFacade = new HttpRequestFacade(request);
-            HttpResponseFacade responseFacade = new HttpResponseFacade(response);
+            HttpServletRequest requestFacade = new HttpRequestFacade(request);
+            HttpServletResponse responseFacade = new HttpResponseFacade(response);
             System.out.println("call service");
             servlet.invoke(requestFacade, responseFacade);
         } catch (Exception e) {
