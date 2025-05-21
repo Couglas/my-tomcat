@@ -1,8 +1,13 @@
 package com.mytomcat.connector.http;
 
+import com.mytomcat.Connector;
+import com.mytomcat.Context;
+import com.mytomcat.Request;
+import com.mytomcat.Response;
 import com.mytomcat.util.CookieTools;
 
 import javax.servlet.ServletOutputStream;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -19,12 +24,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author zhenxingchen4
  * @since 2025/5/16
  */
-public class HttpResponseImpl implements HttpServletResponse {
+public class HttpResponseImpl implements HttpServletResponse, Response {
     private HttpRequestImpl request;
     private OutputStream output;
     private PrintWriter writer;
     private String contentType = null;
-    private long contentLength = -1;
+    private int contentLength = -1;
     private String charset = null;
     private String characterEncoding = "UTF-8";
     private String protocol = "HTTP/1.1";
@@ -54,6 +59,76 @@ public class HttpResponseImpl implements HttpServletResponse {
 
     public void setOutput(OutputStream output) {
         this.output = output;
+    }
+
+    @Override
+    public Connector getConnector() {
+        return null;
+    }
+
+    @Override
+    public void setConnector(Connector connector) {
+
+    }
+
+    @Override
+    public int getContentCount() {
+        return 0;
+    }
+
+    @Override
+    public Context getContext() {
+        return null;
+    }
+
+    @Override
+    public void setContext(Context context) {
+
+    }
+
+    @Override
+    public String getInfo() {
+        return null;
+    }
+
+    @Override
+    public Request getRequest() {
+        return null;
+    }
+
+    @Override
+    public void setRequest(Request request) {
+
+    }
+
+    @Override
+    public ServletResponse getResponse() {
+        return null;
+    }
+
+    @Override
+    public OutputStream getStream() {
+        return null;
+    }
+
+    @Override
+    public void setStream(OutputStream stream) {
+        this.output = output;
+    }
+
+    @Override
+    public void setError() {
+
+    }
+
+    @Override
+    public boolean isError() {
+        return false;
+    }
+
+    @Override
+    public ServletOutputStream createOutputStream() throws IOException {
+        return null;
     }
 
     public void finishResponse() {
@@ -148,13 +223,20 @@ public class HttpResponseImpl implements HttpServletResponse {
     @Override
     public void addCookie(Cookie cookie) {
         synchronized (cookies) {
+            Iterator<Cookie> items = cookies.iterator();
+            while (items.hasNext()) {
+                Cookie c = items.next();
+                if (c.getName().equals(cookie.getName())) {
+                    items.remove();
+                }
+            }
             cookies.add(cookie);
         }
     }
 
     @Override
     public boolean containsHeader(String s) {
-        return false;
+        return headers.get(s) != null;
     }
 
     @Override
@@ -236,7 +318,8 @@ public class HttpResponseImpl implements HttpServletResponse {
 
     @Override
     public void setStatus(int i) {
-
+        this.status = i;
+        this.message = this.getStatusMessage(i);
     }
 
     @Override
@@ -246,7 +329,7 @@ public class HttpResponseImpl implements HttpServletResponse {
 
     @Override
     public int getStatus() {
-        return 0;
+        return this.status;
     }
 
     @Override
@@ -274,7 +357,18 @@ public class HttpResponseImpl implements HttpServletResponse {
         return this.contentType;
     }
 
-    private long getContentLength() {
+    @Override
+    public PrintWriter getReporter() {
+        return null;
+    }
+
+    @Override
+    public void recycle() {
+
+    }
+
+    @Override
+    public int getContentLength() {
         return this.contentLength;
     }
 
@@ -285,7 +379,9 @@ public class HttpResponseImpl implements HttpServletResponse {
 
     @Override
     public PrintWriter getWriter() throws IOException {
-        writer = new PrintWriter(new OutputStreamWriter(output, getCharacterEncoding()), true);
+        if (writer == null) {
+            writer = new PrintWriter(new OutputStreamWriter(output, getCharacterEncoding()), true);
+        }
         return this.writer;
     }
 
@@ -301,7 +397,7 @@ public class HttpResponseImpl implements HttpServletResponse {
 
     @Override
     public void setContentLengthLong(long l) {
-        this.contentLength = l;
+
     }
 
     @Override
@@ -326,6 +422,11 @@ public class HttpResponseImpl implements HttpServletResponse {
 
     @Override
     public void resetBuffer() {
+
+    }
+
+    @Override
+    public void sendAcknowledgement() throws IOException {
 
     }
 

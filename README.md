@@ -85,8 +85,27 @@ connector应该只关注连接的管理和分发，具体的Servlet管理交给�
 参照tomcat的框架层级，一个server对外提供http服务，内部支持多个虚拟主机，每个主机又有多个应用，每个应用包含多个servlet。简单起见，只实现context和wrapper两层，也足够弄清tomcat多层容器的概念
 1. 抽象Container接口：对外提供get、set父、子容器和处理请求的invoke方法等
 2. 新增ContainerBase类，实现Container接口：提供容器的默认实现，内部用map维护多个子容器，一个容器属性作为父容器
-3. 修改ServletContainer名称为ServletContext、ServletWrapper，继承ContainerBase类，实现相应方法，改造为相应的两个容器
+3. 修改ServletContainer名称为StandardContext、StandardWrapper，继承ContainerBase类，实现相应方法，改造为相应的两个容器
+# 实现容器间的互相调用
+当服务器要调用某个具体的servlet的时候，是先经过这些container的invoke()方法一层一层调用。每个container执行本层具体任务之前，会先执行一连串的valve，这些valve用于给每层container做一些操作，如日志打印等。 
 
+具体来说，每一层container都有一个pipeline，它是由多个valve组成的。调用某个container.invoke，就是调用它的pipeline的第一个valve，每个valve都会调用下一个valve，直到最后一个basic valve（每个容器都默认存在），然后调用下一层容器，直到最后。
+1. 新增Valve接口：提供获取container和invoke等方法
+2. 新增ValveContext接口：提供invokeNext方法，调用下一个valve
+3. 新增Pipeline接口：提供增删查basic valve和valve的方法以及invoke方法
+4. 新增ValveBase：实现基础Valve，内部依赖一个container
+5. 新增StandardPipeline：实现Pipeline，内部维护Valve数组和一个basic valve，实现相应增删改方法。其invoke依赖实现了ValveContext的内部类，调用ValveContext.invokeNext，具体实现就是按顺序执行valve数组中的valve.invoke，最后一个执行basic valve.invoke
+6. 新增StandardContextValve：实现ValveBase，context容器级别的basic valve，作用是根据请求获取容器中对应的wrapper并调用wrapper.invoke
+7. 新增StandardWrapperValve：实现ValveBase，wrapper容器级别的basic valve，作用是获取wrapper中的servlet并调用servlet.service
+6. ContainerBase实现Pipeline，其实现的Pipeline方法依赖其内部的StandardPipeline，invoke直接调用pipeline.invoke
+7. StandardContext和StandardWrapper初始化时设置对应的basic valve，如果有需要可以添加自定义的valve去处理相关逻辑
+
+总结一下流程，如下：
+
+HttpConnector -> HttpProcessor -> ServletProcessor -> StandardContext.invoke -> ContainerBase.invoke
+-> StandardPipeline.invoke -> StandardPipeline内部类StandardPipelineValveContext.invokeNext -> for(Valve : valves) {valve.invoke}
+-> other context valve.invoke -> StandardContextValve.invoke -> other wrapper valve.invoke -> StandardWrapperValve.invoke 
+-> servlet.service -> controller -> service
 
 
 

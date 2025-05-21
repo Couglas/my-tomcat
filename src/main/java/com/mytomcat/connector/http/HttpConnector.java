@@ -1,6 +1,6 @@
 package com.mytomcat.connector.http;
 
-import com.mytomcat.core.StandardContext;
+import com.mytomcat.*;
 import com.mytomcat.session.StandardSession;
 
 import javax.servlet.http.HttpSession;
@@ -20,24 +20,53 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author zhenxingchen4
  * @since 2025/5/15
  */
-public class HttpConnector implements Runnable {
+public class HttpConnector implements Connector, Runnable {
+    private static final String info = "Http Connector, version 0.1";
     private int minProcessors = 3;
     private int maxProcessors = 10;
     private int curProcessors = 0;
     private Deque<HttpProcessor> processors = new ArrayDeque<>();
     public static Map<String, HttpSession> sessions = new ConcurrentHashMap<>();
-    private StandardContext container;
+    private Container container;
+    private int port = 8080;
+    private String threadName = null;
 
     public HttpConnector() {
         initProcessors();
     }
 
-    public void setContainer(StandardContext container) {
+    public Container getContainer() {
+        return container;
+    }
+
+    @Override
+    public void setContainer(Container container) {
         this.container = container;
     }
 
-    public StandardContext getContainer() {
-        return container;
+    @Override
+    public String getInfo() {
+        return info;
+    }
+
+    @Override
+    public void setScheme(String scheme) {
+
+    }
+
+    @Override
+    public Request createRequest() {
+        return null;
+    }
+
+    @Override
+    public Response createResponse() {
+        return null;
+    }
+
+    @Override
+    public void initialize() {
+
     }
 
     @Override
@@ -95,12 +124,43 @@ public class HttpConnector implements Runnable {
         processor.start();
         processors.push(processor);
         curProcessors++;
+        log("newProcessor");
         return processors.pop();
     }
 
     public void start() {
+        threadName = "HttpConnector[" + port + "]";
+        log("httpConnector.starting " + threadName);
         Thread thread = new Thread(this);
         thread.start();
+    }
+
+    private void log(String msg) {
+        Logger logger = container.getLogger();
+        String localName = threadName;
+        if (localName == null) {
+            localName = "HttpConnector";
+        }
+        if (logger != null) {
+            logger.log(localName + " " + msg);
+        } else {
+            System.out.println(localName + " " + msg);
+        }
+    }
+
+    private void log(String msg, Throwable throwable) {
+        Logger logger = container.getLogger();
+        String localName = threadName;
+        if (localName == null) {
+            localName = "HttpConnector";
+        }
+
+        if (logger != null) {
+            logger.log(localName + " " + msg, throwable);
+        } else {
+            System.out.println(localName + " " + msg);
+            throwable.printStackTrace(System.out);
+        }
     }
 
     public void recycle(HttpProcessor processor) {

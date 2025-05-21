@@ -1,8 +1,6 @@
 package com.mytomcat;
 
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
@@ -35,7 +33,11 @@ public interface Container {
 
     Container[] findChildren();
 
-    void invoke(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException;
+    void invoke(Request req, Response resp) throws IOException, ServletException;
 
     void removeChild(Container child);
+
+    Logger getLogger();
+
+    void setLogger(Logger logger);
 }

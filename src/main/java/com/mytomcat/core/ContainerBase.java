@@ -1,10 +1,8 @@
 package com.mytomcat.core;
 
-import com.mytomcat.Container;
+import com.mytomcat.*;
 
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -15,14 +13,48 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author zhenxingchen4
  * @since 2025/5/20
  */
-public abstract class ContainerBase implements Container {
+public abstract class ContainerBase implements Container, Pipeline {
     protected final Map<String, Container> children = new ConcurrentHashMap<>();
     protected ClassLoader loader = null;
     protected String name = null;
     protected Container parent = null;
+    protected Logger logger = null;
+    protected Pipeline pipeline = new StandardPipeline(this);
+
+    public Pipeline getPipeline() {
+        return pipeline;
+    }
 
     @Override
-    public abstract String getInfo();
+    public synchronized void addValve(Valve valve) {
+        pipeline.addValve(valve);
+    }
+
+    @Override
+    public Valve getBasic() {
+        return pipeline.getBasic();
+    }
+
+    @Override
+    public void setBasic(Valve valve) {
+        pipeline.setBasic(valve);
+    }
+
+    @Override
+    public Valve[] getValves() {
+        return pipeline.getValves();
+    }
+
+    @Override
+    public void invoke(Request req, Response resp) throws IOException, ServletException {
+        System.out.println("ContainerBase invoke");
+        pipeline.invoke(req, resp);
+    }
+
+    @Override
+    public void removeValve(Valve valve) {
+        pipeline.removeValve(valve);
+    }
 
     @Override
     public ClassLoader getLoader() {
@@ -96,11 +128,6 @@ public abstract class ContainerBase implements Container {
     }
 
     @Override
-    public void invoke(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-
-    }
-
-    @Override
     public void removeChild(Container child) {
         synchronized (children) {
             if (children.get(child.getName()) == null) {
@@ -110,4 +137,52 @@ public abstract class ContainerBase implements Container {
         }
         child.setParent(null);
     }
+
+    @Override
+    public Logger getLogger() {
+        if (logger != null) {
+            return logger;
+        }
+        if (parent != null) {
+            return parent.getLogger();
+        }
+        return null;
+    }
+
+    @Override
+    public synchronized void setLogger(Logger logger) {
+        if (logger == this.logger) {
+            return;
+        }
+        this.logger = logger;
+    }
+
+    protected void log(String msg) {
+        Logger logger = getLogger();
+        if (logger != null) {
+            logger.log(logName() + ": " + msg);
+        } else {
+            System.out.println(logName() + ": " + msg);
+        }
+    }
+
+    protected void log(String msg, Throwable throwable) {
+        Logger logger = getLogger();
+        if (logger != null) {
+            logger.log(logName() + ": " + msg, throwable);
+        } else {
+            System.out.println(logName() + ": " + msg + ": " + throwable);
+            throwable.printStackTrace(System.out);
+        }
+    }
+
+    private String logName() {
+        String clazz = this.getClass().getName();
+        int period = clazz.indexOf(".");
+        if (period >= 0) {
+            clazz = clazz.substring(period + 1);
+        }
+        return clazz + "[" + getName() + "]";
+    }
+
 }

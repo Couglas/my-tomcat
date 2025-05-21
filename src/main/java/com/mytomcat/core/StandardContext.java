@@ -1,17 +1,14 @@
 package com.mytomcat.core;
 
 import com.mytomcat.Context;
+import com.mytomcat.Request;
+import com.mytomcat.Response;
 import com.mytomcat.Wrapper;
-import com.mytomcat.connector.http.HttpRequestImpl;
-import com.mytomcat.startup.Bootstrap;
-import com.mytomcat.connector.HttpRequestFacade;
-import com.mytomcat.connector.HttpResponseFacade;
 import com.mytomcat.connector.http.HttpConnector;
+import com.mytomcat.startup.Bootstrap;
 
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -33,6 +30,10 @@ public class StandardContext extends ContainerBase implements Context {
     Map<String, StandardWrapper> servletInstanceMap = new ConcurrentHashMap<>();
 
     public StandardContext() {
+        super();
+        pipeline.setBasic(new StandardContextValve());
+        name = "StandardContext";
+
         try {
             URL[] urls = new URL[1];
             URLStreamHandler streamHandler = null;
@@ -43,6 +44,7 @@ public class StandardContext extends ContainerBase implements Context {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        log("Container created.");
     }
 
     @Override
@@ -69,27 +71,8 @@ public class StandardContext extends ContainerBase implements Context {
     }
 
     @Override
-    public void invoke(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
-        StandardWrapper servlet = null;
-        String uri = ((HttpRequestImpl) request).getUri();
-        String servletName = uri.substring(uri.lastIndexOf("/") + 1);
-        servlet = servletInstanceMap.get(servletName);
-        if (servlet == null) {
-            servlet = new StandardWrapper(servletName, this);
-            servletClassMap.put(servletName, servletName);
-            servletInstanceMap.put(servletName, servlet);
-        }
-
-        try {
-            HttpServletRequest requestFacade = new HttpRequestFacade(request);
-            HttpServletResponse responseFacade = new HttpResponseFacade(response);
-            System.out.println("call service");
-            servlet.invoke(requestFacade, responseFacade);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
+    public void invoke(Request request, Response response) throws IOException, ServletException {
+        super.invoke(request, response);
     }
 
     @Override
@@ -165,5 +148,15 @@ public class StandardContext extends ContainerBase implements Context {
     @Override
     public void reload() {
 
+    }
+
+    public Wrapper getWrapper(String name) {
+        StandardWrapper servletWrapper = servletInstanceMap.get(name);
+        if (servletWrapper == null) {
+            servletWrapper = new StandardWrapper(name, this);
+            this.servletClassMap.put(name, name);
+            this.servletInstanceMap.put(name, servletWrapper);
+        }
+        return servletWrapper;
     }
 }

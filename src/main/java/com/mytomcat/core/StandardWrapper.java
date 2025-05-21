@@ -1,12 +1,12 @@
 package com.mytomcat.core;
 
 import com.mytomcat.Container;
+import com.mytomcat.Request;
+import com.mytomcat.Response;
 import com.mytomcat.Wrapper;
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 /**
@@ -20,6 +20,9 @@ public class StandardWrapper extends ContainerBase implements Wrapper {
     private String servletClass;
 
     public StandardWrapper(String servletClass, StandardContext parent) {
+        super();
+        pipeline.setBasic(new StandardWrapperValve());
+
         this.parent = parent;
         this.servletClass = servletClass;
         try {
@@ -115,10 +118,9 @@ public class StandardWrapper extends ContainerBase implements Wrapper {
     }
 
     @Override
-    public void invoke(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        if (instance != null) {
-            instance.service(req, resp);
-        }
+    public void invoke(Request req, Response resp) throws IOException, ServletException {
+        System.out.println("StandardWrapper invoke");
+        super.invoke(req, resp);
     }
 
     @Override
