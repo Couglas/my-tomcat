@@ -1,4 +1,4 @@
-package server;
+package com.mytomcat.connector.http;
 
 /**
  * http请求头

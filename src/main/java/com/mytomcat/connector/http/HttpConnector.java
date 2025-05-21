@@ -1,4 +1,7 @@
-package server;
+package com.mytomcat.connector.http;
+
+import com.mytomcat.core.StandardContext;
+import com.mytomcat.session.StandardSession;
 
 import javax.servlet.http.HttpSession;
 import java.io.IOException;
@@ -23,17 +26,17 @@ public class HttpConnector implements Runnable {
     private int curProcessors = 0;
     private Deque<HttpProcessor> processors = new ArrayDeque<>();
     public static Map<String, HttpSession> sessions = new ConcurrentHashMap<>();
-    private ServletContext container;
+    private StandardContext container;
 
     public HttpConnector() {
         initProcessors();
     }
 
-    public void setContainer(ServletContext container) {
+    public void setContainer(StandardContext container) {
         this.container = container;
     }
 
-    public ServletContext getContainer() {
+    public StandardContext getContainer() {
         return container;
     }
 
@@ -104,8 +107,8 @@ public class HttpConnector implements Runnable {
         processors.push(processor);
     }
 
-    public static Session createSession() {
-        Session session = new Session();
+    public static StandardSession createSession() {
+        StandardSession session = new StandardSession();
         session.setValid(true);
         session.setCreationTime(System.currentTimeMillis());
         String sessionId = generateSessionId();

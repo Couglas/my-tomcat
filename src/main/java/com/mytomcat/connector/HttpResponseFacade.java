@@ -1,4 +1,4 @@
-package server;
+package com.mytomcat.connector;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;

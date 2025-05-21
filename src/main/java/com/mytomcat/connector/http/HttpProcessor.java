@@ -1,4 +1,4 @@
-package server;
+package com.mytomcat.connector.http;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
@@ -32,14 +32,14 @@ public class HttpProcessor implements Runnable {
             output = socket.getOutputStream();
             keepAlive = true;
             while (keepAlive) {
-                HttpRequest request = new HttpRequest(input);
+                HttpRequestImpl request = new HttpRequestImpl(input);
                 request.parse(socket);
 
                 if (request.getSessionId() == null || request.getSessionId().isEmpty()) {
                     request.getSession(true);
                 }
 
-                HttpResponse response = new HttpResponse(output);
+                HttpResponseImpl response = new HttpResponseImpl(output);
                 response.setRequest(request);
                 request.setResponse(response);
                 response.sendHeaders();
@@ -66,7 +66,7 @@ public class HttpProcessor implements Runnable {
         }
     }
 
-    private void finishResponse(HttpResponse response) {
+    private void finishResponse(HttpResponseImpl response) {
         response.finishResponse();
     }
 

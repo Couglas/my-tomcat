@@ -1,4 +1,6 @@
-package server;
+package com.mytomcat.session;
+
+import com.mytomcat.Session;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
@@ -14,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author zhenxingchen4
  * @since 2025/5/16
  */
-public class Session implements HttpSession {
+public class StandardSession implements HttpSession, Session {
     private String sessionId;
     private long creationTime;
     private boolean valid;
@@ -44,6 +46,16 @@ public class Session implements HttpSession {
     @Override
     public void setMaxInactiveInterval(int i) {
 
+    }
+
+    @Override
+    public void setNew(boolean isNew) {
+
+    }
+
+    @Override
+    public HttpSession getSession() {
+        return null;
     }
 
     @Override
@@ -110,11 +122,36 @@ public class Session implements HttpSession {
         this.sessionId = sessionId;
     }
 
+    @Override
+    public String getInfo() {
+        return null;
+    }
+
     public void setCreationTime(long creationTime) {
         this.creationTime = creationTime;
     }
 
     public void setValid(boolean valid) {
         this.valid = valid;
+    }
+
+    @Override
+    public boolean isValid() {
+        return false;
+    }
+
+    @Override
+    public void access() {
+
+    }
+
+    @Override
+    public void expire() {
+
+    }
+
+    @Override
+    public void recycle() {
+
     }
 }

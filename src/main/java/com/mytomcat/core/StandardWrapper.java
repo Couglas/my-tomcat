@@ -1,4 +1,7 @@
-package server;
+package com.mytomcat.core;
+
+import com.mytomcat.Container;
+import com.mytomcat.Wrapper;
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
@@ -12,11 +15,11 @@ import java.io.IOException;
  * @author zhenxingchen4
  * @since 2025/5/20
  */
-public class ServletWrapper extends ContainerBase {
+public class StandardWrapper extends ContainerBase implements Wrapper {
     private Servlet instance = null;
     private String servletClass;
 
-    public ServletWrapper(String servletClass, ServletContext parent) {
+    public StandardWrapper(String servletClass, StandardContext parent) {
         this.parent = parent;
         this.servletClass = servletClass;
         try {
@@ -28,7 +31,12 @@ public class ServletWrapper extends ContainerBase {
 
     @Override
     public String getInfo() {
-        return "My Servlet Wrapper, version 0.1";
+        return "My Servlet com.mytomcat.Wrapper, version 0.1";
+    }
+
+    @Override
+    public void setLoadOnStartup(int value) {
+
     }
 
     public String getServletClass() {
@@ -37,6 +45,36 @@ public class ServletWrapper extends ContainerBase {
 
     public void setServletClass(String servletClass) {
         this.servletClass = servletClass;
+    }
+
+    @Override
+    public void addInitParameter(String name, String value) {
+
+    }
+
+    @Override
+    public Servlet allocate() throws ServletException {
+        return null;
+    }
+
+    @Override
+    public String findInitParameter(String name) {
+        return null;
+    }
+
+    @Override
+    public String[] findInitParameters() {
+        return new String[0];
+    }
+
+    @Override
+    public void load() throws ServletException {
+
+    }
+
+    @Override
+    public void removeInitParameter(String name) {
+
     }
 
     public Servlet getServlet() {

@@ -1,4 +1,4 @@
-package server;
+package com.mytomcat.session;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
@@ -11,10 +11,10 @@ import java.util.Enumeration;
  * @author zhenxingchen4
  * @since 2025/5/16
  */
-public class SessionFacade implements HttpSession {
+public class StandardSessionFacade implements HttpSession {
     private HttpSession session;
 
-    public SessionFacade(HttpSession session) {
+    public StandardSessionFacade(HttpSession session) {
         this.session = session;
     }
 

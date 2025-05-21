@@ -1,4 +1,6 @@
-package server;
+package com.mytomcat.connector.http;
+
+import com.mytomcat.util.CookieTools;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -17,8 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author zhenxingchen4
  * @since 2025/5/16
  */
-public class HttpResponse implements HttpServletResponse {
-    private HttpRequest request;
+public class HttpResponseImpl implements HttpServletResponse {
+    private HttpRequestImpl request;
     private OutputStream output;
     private PrintWriter writer;
     private String contentType = null;
@@ -31,14 +33,14 @@ public class HttpResponse implements HttpServletResponse {
     private int status = HttpServletResponse.SC_OK;
     private List<Cookie> cookies = new ArrayList<>();
 
-    public HttpResponse() {
+    public HttpResponseImpl() {
     }
 
-    public HttpResponse(OutputStream output) {
+    public HttpResponseImpl(OutputStream output) {
         this.output = output;
     }
 
-    public void setRequest(HttpRequest request) {
+    public void setRequest(HttpRequestImpl request) {
         this.request = request;
     }
 
@@ -83,13 +85,13 @@ public class HttpResponse implements HttpServletResponse {
             case SC_NOT_IMPLEMENTED:
                 return "Not Implemented";
             case SC_REQUEST_URI_TOO_LONG:
-                return "Request Uri Too Long";
+                return "com.mytomcat.Request Uri Too Long";
             case SC_SERVICE_UNAVAILABLE:
                 return "Service Unavailable";
             case SC_UNAUTHORIZED:
                 return "Unauthorized";
             default:
-                return "Http Response Status: " + status;
+                return "Http com.mytomcat.Response Status: " + status;
         }
     }
 

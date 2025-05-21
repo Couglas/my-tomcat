@@ -1,6 +1,7 @@
-package server;
+package com.mytomcat.connector.http;
 
 import org.apache.commons.lang3.text.StrSubstitutor;
+import com.mytomcat.startup.Bootstrap;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -33,13 +34,13 @@ public class StaticResourceProcessor {
             + "\r\n";
 
 
-    public void process(HttpRequest request, HttpResponse response) throws IOException {
+    public void process(HttpRequestImpl request, HttpResponseImpl response) throws IOException {
         byte[] bytes = new byte[BUFFER_SIZE];
         FileInputStream fis = null;
         OutputStream output = null;
         try {
             output = response.getOutput();
-            File file = new File(HttpServer.WEB_ROOT, request.getUri());
+            File file = new File(Bootstrap.WEB_ROOT, request.getUri());
             if (file.exists()) {
                 String head = composeResponseHead(file);
                 output.write(head.getBytes(StandardCharsets.UTF_8));

@@ -1,4 +1,6 @@
-package server;
+package com.mytomcat.connector.http;
+
+import com.mytomcat.session.StandardSessionFacade;
 
 import javax.servlet.*;
 import javax.servlet.ServletContext;
@@ -19,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author zhenxingchen4
  * @since 2025/5/16
  */
-public class HttpRequest implements HttpServletRequest {
+public class HttpRequestImpl implements HttpServletRequest {
     private InputStream input;
     private SocketInputStream sis;
     private String uri;
@@ -32,11 +34,11 @@ public class HttpRequest implements HttpServletRequest {
     private boolean parsed = false;
     private HttpSession session;
     private String sessionid;
-    private SessionFacade sessionFacade;
+    private StandardSessionFacade sessionFacade;
     private Cookie[] cookies;
     private HttpServletResponse response;
 
-    public HttpRequest(InputStream input) {
+    public HttpRequestImpl(InputStream input) {
         this.input = input;
         this.sis = new SocketInputStream(this.input, 2048);
     }
@@ -390,12 +392,12 @@ public class HttpRequest implements HttpServletRequest {
             if (session == null) {
                 session = HttpConnector.createSession();
             }
-            sessionFacade = new SessionFacade(session);
+            sessionFacade = new StandardSessionFacade(session);
             return sessionFacade;
         }
 
         session = HttpConnector.createSession();
-        sessionFacade = new SessionFacade(session);
+        sessionFacade = new StandardSessionFacade(session);
         sessionid = session.getId();
         return sessionFacade;
     }

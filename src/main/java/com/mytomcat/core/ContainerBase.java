@@ -1,4 +1,6 @@
-package server;
+package com.mytomcat.core;
+
+import com.mytomcat.Container;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
