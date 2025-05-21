@@ -106,6 +106,18 @@ HttpConnector -> HttpProcessor -> ServletProcessor -> StandardContext.invoke -> 
 -> StandardPipeline.invoke -> StandardPipeline内部类StandardPipelineValveContext.invokeNext -> for(Valve : valves) {valve.invoke}
 -> other context valve.invoke -> StandardContextValve.invoke -> other wrapper valve.invoke -> StandardWrapperValve.invoke 
 -> servlet.service -> controller -> service
+# 实现filter
+filter的调用是在真正的servlet之前，也就是StandardWrapperValve.invoke中先调用这些filter，完事再调用servlet.service。
+
+根据经验，这些filter应该是先配置在什么地方，然后加载到某个容器中，在需要的时候（url或servletName匹配到的filter）实例化成具体的类，存到filterChain的list中，然后调用第一个filter.doFilter，filter.doFilter又会调用filterChain.doFilter，直到所有filter都执行完成，最后执行servlet.service。
+1. 新增FilterDef：filter定义类，存储filter类名、名称等
+2. 新增FilterMap：存储filter与URL/Servlet的映射关系
+3. 新增ApplicationFilterConfig：实现FilterConfig，filter配置类，也是容器中加载的filter配置，对外提供getFilter实例化具体的filter（FilterDef -> Filter）
+4. 新增ApplicationFilterChain：实现FilterChain，内部维护List<ApplicationFilterConfig> filters，具体的doFilter实现就是通过迭代器调用第一个filter，完成后调用servlet.service
+5. 修改StandardContext，维护filterMap映射、FilterDef定义以及FilterConfig配置等
+6. 修改StandardWrapperValve，根据StandardContext中的filterMap或Servlet匹配并实例化FilterConfig，构建filterChain，执行filterChain.doFilter
+
+
 
 
 

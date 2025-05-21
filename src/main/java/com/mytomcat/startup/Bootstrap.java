@@ -2,6 +2,8 @@ package com.mytomcat.startup;
 
 import com.mytomcat.Logger;
 import com.mytomcat.connector.http.HttpConnector;
+import com.mytomcat.core.FilterDef;
+import com.mytomcat.core.FilterMap;
 import com.mytomcat.core.StandardContext;
 import com.mytomcat.logger.FileLogger;
 
@@ -26,8 +28,22 @@ public class Bootstrap {
         StandardContext container = new StandardContext();
         connector.setContainer(container);
         container.setConnector(connector);
+
         Logger logger = new FileLogger();
         container.setLogger(logger);
+
+        FilterDef filterDef = new FilterDef();
+        filterDef.setFilterName("TestFilter");
+        filterDef.setFilterClass("test.TestFilter");
+        container.addFilterDef(filterDef);
+
+        FilterMap filterMap = new FilterMap();
+        filterMap.setFilterName("TestFilter");
+        filterMap.setUrlPattern("/*");
+        container.addFilterMap(filterMap);
+
+        container.filterStart();
+
         connector.start();
 
     }

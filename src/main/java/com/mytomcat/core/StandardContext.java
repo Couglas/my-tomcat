@@ -7,6 +7,7 @@ import com.mytomcat.Wrapper;
 import com.mytomcat.connector.http.HttpConnector;
 import com.mytomcat.startup.Bootstrap;
 
+import javax.servlet.FilterConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import java.io.File;
@@ -14,6 +15,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLStreamHandler;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -26,13 +28,15 @@ import java.util.concurrent.ConcurrentHashMap;
 public class StandardContext extends ContainerBase implements Context {
     private HttpConnector connector = null;
     private ClassLoader loader = null;
-    Map<String, String> servletClassMap = new ConcurrentHashMap<>();
-    Map<String, StandardWrapper> servletInstanceMap = new ConcurrentHashMap<>();
+    private Map<String, String> servletClassMap = new ConcurrentHashMap<>();
+    private Map<String, StandardWrapper> servletInstanceMap = new ConcurrentHashMap<>();
+    private Map<String, ApplicationFilterConfig> filterConfigs = new ConcurrentHashMap<>();
+    private Map<String, FilterDef> filterDefs = new ConcurrentHashMap<>();
+    private FilterMap filterMaps[] = new FilterMap[0];
 
     public StandardContext() {
         super();
         pipeline.setBasic(new StandardContextValve());
-        name = "StandardContext";
 
         try {
             URL[] urls = new URL[1];
@@ -45,6 +49,121 @@ public class StandardContext extends ContainerBase implements Context {
             e.printStackTrace();
         }
         log("Container created.");
+    }
+
+
+    public Wrapper getWrapper(String name) {
+        StandardWrapper servletWrapper = servletInstanceMap.get(name);
+        if (servletWrapper == null) {
+            servletWrapper = new StandardWrapper(name, this);
+            this.servletClassMap.put(name, name);
+            this.servletInstanceMap.put(name, servletWrapper);
+        }
+        return servletWrapper;
+    }
+
+    public void addFilterDef(FilterDef filterDef) {
+        filterDefs.put(filterDef.getFilterName(), filterDef);
+    }
+
+    public void addFilterMap(FilterMap filterMap) {
+        String filterName = filterMap.getFilterName();
+        String servletName = filterMap.getServletName();
+        String urlPattern = filterMap.getUrlPattern();
+        if (findFilterDef(filterName) == null) {
+            throw new IllegalArgumentException("standardContext filterMap.name: " + filterName);
+        }
+        if (servletName == null && urlPattern == null) {
+            throw new IllegalArgumentException("standardContext filterMap.either");
+        }
+        if (servletName != null && urlPattern != null) {
+            throw new IllegalArgumentException("standardContext filterMap.either");
+        }
+        if (urlPattern != null && !validateURLPattern(urlPattern)) {
+            throw new IllegalArgumentException("standardContext filterMap.pattern: " + urlPattern);
+        }
+
+        synchronized (filterMaps) {
+            FilterMap[] results = new FilterMap[filterMaps.length + 1];
+            System.arraycopy(filterMaps, 0, results, 0, filterMaps.length);
+            results[filterMaps.length] = filterMap;
+            filterMaps = results;
+        }
+    }
+
+    private FilterDef findFilterDef(String filterName) {
+        return filterDefs.get(filterName);
+    }
+
+    public FilterDef[] findFilterDefs() {
+        synchronized (filterDefs) {
+            FilterDef[] results = new FilterDef[filterDefs.size()];
+            return filterDefs.values().toArray(results);
+        }
+    }
+
+    public FilterMap[] findFilterMaps() {
+        return filterMaps;
+    }
+
+    public void removeFilterDef(FilterDef filterDef) {
+        filterDefs.remove(filterDef.getFilterName());
+    }
+
+    public void removeFilterMap(FilterMap filterMap) {
+        synchronized (filterMaps) {
+            int n = -1;
+            for (int i = 0; i < filterMaps.length; i++) {
+                if (filterMaps[i] == filterMap) {
+                    n = i;
+                    break;
+                }
+            }
+            if (n < 0) {
+                return;
+            }
+
+            FilterMap[] results = new FilterMap[filterMaps.length - 1];
+            System.arraycopy(filterMaps, 0, results, 0, n);
+            System.arraycopy(filterMaps, n + 1, results, n, filterMaps.length - 1 - n);
+            filterMaps = results;
+        }
+    }
+
+    public boolean filterStart() {
+        System.out.println("Filter start...");
+        boolean ok = true;
+        synchronized (filterConfigs) {
+            filterConfigs.clear();
+            Iterator<String> names = filterDefs.keySet().iterator();
+            while (names.hasNext()) {
+                String name = names.next();
+                ApplicationFilterConfig filterConfig = null;
+                try {
+                    filterConfig = new ApplicationFilterConfig(this, filterDefs.get(name));
+                    filterConfigs.put(name, filterConfig);
+                } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | ServletException e) {
+                    e.printStackTrace();
+                    ok = false;
+                }
+            }
+        }
+        return ok;
+    }
+
+    public FilterConfig findFilterConfig(String name) {
+        return filterConfigs.get(name);
+    }
+
+    private boolean validateURLPattern(String urlPattern) {
+        if (urlPattern == null) {
+            return false;
+        }
+        if (urlPattern.startsWith("*.")) {
+            return urlPattern.indexOf('/') < 0;
+        }
+
+        return urlPattern.startsWith("/");
     }
 
     @Override
@@ -148,15 +267,5 @@ public class StandardContext extends ContainerBase implements Context {
     @Override
     public void reload() {
 
-    }
-
-    public Wrapper getWrapper(String name) {
-        StandardWrapper servletWrapper = servletInstanceMap.get(name);
-        if (servletWrapper == null) {
-            servletWrapper = new StandardWrapper(name, this);
-            this.servletClassMap.put(name, name);
-            this.servletInstanceMap.put(name, servletWrapper);
-        }
-        return servletWrapper;
     }
 }

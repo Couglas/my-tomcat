@@ -21,7 +21,7 @@ public interface Container {
 
     String getName();
 
-    void setName();
+    void setName(String name);
 
     Container getParent();
 
