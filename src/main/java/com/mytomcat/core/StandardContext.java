@@ -1,9 +1,6 @@
 package com.mytomcat.core;
 
-import com.mytomcat.Context;
-import com.mytomcat.Request;
-import com.mytomcat.Response;
-import com.mytomcat.Wrapper;
+import com.mytomcat.*;
 import com.mytomcat.connector.http.HttpConnector;
 import com.mytomcat.startup.Bootstrap;
 
@@ -15,7 +12,9 @@ import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.net.URLStreamHandler;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -33,6 +32,8 @@ public class StandardContext extends ContainerBase implements Context {
     private Map<String, ApplicationFilterConfig> filterConfigs = new ConcurrentHashMap<>();
     private Map<String, FilterDef> filterDefs = new ConcurrentHashMap<>();
     private FilterMap filterMaps[] = new FilterMap[0];
+    private List<ContainerListenerDef> listenerDefs = new ArrayList<>();
+    private List<ContainerListener> listeners = new ArrayList<>();
 
     public StandardContext() {
         super();
@@ -49,6 +50,69 @@ public class StandardContext extends ContainerBase implements Context {
             e.printStackTrace();
         }
         log("Container created.");
+    }
+
+    public void start() {
+        fireContainerEvent("Container started.", this);
+    }
+
+    private void fireContainerEvent(String type, Object data) {
+        if (listeners.isEmpty()) {
+            return;
+        }
+
+        ContainerEvent event = new ContainerEvent(this, type, data);
+        ContainerListener[] list = new ContainerListener[0];
+        synchronized (listeners) {
+            list = listeners.toArray(list);
+        }
+
+        for (ContainerListener listener : list) {
+            listener.containerEvent(event);
+        }
+    }
+
+    public boolean listenerStart() {
+        System.out.println("Listener start...");
+        boolean ok = true;
+        synchronized (listeners) {
+            listeners.clear();
+            Iterator<ContainerListenerDef> defs = listenerDefs.iterator();
+            while (defs.hasNext()) {
+                ContainerListenerDef def = defs.next();
+                ContainerListener listener = null;
+
+                String listenerClass = def.getListenerClass();
+                ClassLoader classLoader = this.getLoader();
+                try {
+                    Class<?> clazz = classLoader.loadClass(listenerClass);
+                    listener = (ContainerListener) clazz.newInstance();
+                    addContainerListener(listener);
+                } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
+                    e.printStackTrace();
+                    ok = false;
+                }
+            }
+        }
+        return ok;
+    }
+
+    public void addContainerListener(ContainerListener listener) {
+        synchronized (listeners) {
+            listeners.add(listener);
+        }
+    }
+
+    public void removeContainerListener(ContainerListener listener) {
+        synchronized (listeners) {
+            listeners.remove(listener);
+        }
+    }
+
+    public void addListenerDef(ContainerListenerDef listenerDef) {
+        synchronized (listenerDefs) {
+            listenerDefs.add(listenerDef);
+        }
     }
 
 
@@ -142,7 +206,8 @@ public class StandardContext extends ContainerBase implements Context {
                 try {
                     filterConfig = new ApplicationFilterConfig(this, filterDefs.get(name));
                     filterConfigs.put(name, filterConfig);
-                } catch (ClassNotFoundException | IllegalAccessException | InstantiationException | ServletException e) {
+                } catch (ClassNotFoundException | IllegalAccessException | InstantiationException |
+                         ServletException e) {
                     e.printStackTrace();
                     ok = false;
                 }

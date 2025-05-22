@@ -116,6 +116,11 @@ filter的调用是在真正的servlet之前，也就是StandardWrapperValve.invo
 4. 新增ApplicationFilterChain：实现FilterChain，内部维护List<ApplicationFilterConfig> filters，具体的doFilter实现就是通过迭代器调用第一个filter，完成后调用servlet.service
 5. 修改StandardContext，维护filterMap映射、FilterDef定义以及FilterConfig配置等
 6. 修改StandardWrapperValve，根据StandardContext中的filterMap或Servlet匹配并实例化FilterConfig，构建filterChain，执行filterChain.doFilter
+# 实现listener
+listener和filter类似，都是通过配置加载到容器中，当触发某个事件时，相应的监听器执行相关逻辑。监听器和事件两者共同存在
+1. 新增ContainerEvent事件：实现EventObject
+2. 新增ContainerListener接口：提供触发事件方法
+3. StandardContext内部维护List<ContainerListener>，创建容器后触发事件监听
 
 
 

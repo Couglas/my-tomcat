@@ -1,13 +1,13 @@
 package com.mytomcat.session;
 
 import com.mytomcat.Session;
+import com.mytomcat.SessionEvent;
+import com.mytomcat.SessionListener;
 
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionContext;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -21,6 +21,34 @@ public class StandardSession implements HttpSession, Session {
     private long creationTime;
     private boolean valid;
     private Map<String, Object> attributes = new ConcurrentHashMap<>();
+    private transient List<SessionListener> listeners = new ArrayList<>();
+
+    public void addSessionListener(SessionListener listener) {
+        synchronized (listeners) {
+            listeners.add(listener);
+        }
+    }
+
+    public void removeSessionListener(SessionListener listener) {
+        synchronized (listeners) {
+            listeners.remove(listener);
+        }
+    }
+
+    public void fireSessionEvent(String type, Object data) {
+        if (listeners.isEmpty()) {
+            return;
+        }
+        SessionEvent event = new SessionEvent(this, type, data);
+        SessionListener[] list = new SessionListener[0];
+        synchronized (listeners) {
+            list = listeners.toArray(list);
+        }
+
+        for (SessionListener listener : list) {
+            listener.sessionEvent(event);
+        }
+    }
 
 
     @Override
@@ -120,6 +148,7 @@ public class StandardSession implements HttpSession, Session {
 
     public void setId(String sessionId) {
         this.sessionId = sessionId;
+        fireSessionEvent(Session.SESSION_CREATED_EVENT, null);
     }
 
     @Override

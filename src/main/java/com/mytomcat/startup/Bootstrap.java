@@ -2,6 +2,7 @@ package com.mytomcat.startup;
 
 import com.mytomcat.Logger;
 import com.mytomcat.connector.http.HttpConnector;
+import com.mytomcat.core.ContainerListenerDef;
 import com.mytomcat.core.FilterDef;
 import com.mytomcat.core.FilterMap;
 import com.mytomcat.core.StandardContext;
@@ -41,8 +42,15 @@ public class Bootstrap {
         filterMap.setFilterName("TestFilter");
         filterMap.setUrlPattern("/*");
         container.addFilterMap(filterMap);
-
         container.filterStart();
+
+        ContainerListenerDef listenerDef = new ContainerListenerDef();
+        listenerDef.setListenerName("TestListener");
+        listenerDef.setListenerClass("test.TestListener");
+        container.addListenerDef(listenerDef);
+
+        container.listenerStart();
+        container.start();
 
         connector.start();
 
