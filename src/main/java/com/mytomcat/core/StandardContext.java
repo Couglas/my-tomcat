@@ -2,6 +2,7 @@ package com.mytomcat.core;
 
 import com.mytomcat.*;
 import com.mytomcat.connector.http.HttpConnector;
+import com.mytomcat.logger.FileLogger;
 import com.mytomcat.startup.Bootstrap;
 
 import javax.servlet.FilterConfig;
@@ -34,25 +35,33 @@ public class StandardContext extends ContainerBase implements Context {
     private FilterMap filterMaps[] = new FilterMap[0];
     private List<ContainerListenerDef> listenerDefs = new ArrayList<>();
     private List<ContainerListener> listeners = new ArrayList<>();
+    private String docBase;
 
     public StandardContext() {
         super();
         pipeline.setBasic(new StandardContextValve());
-
-        try {
-            URL[] urls = new URL[1];
-            URLStreamHandler streamHandler = null;
-            File classPath = new File(Bootstrap.WEB_ROOT);
-            String repository = (new URL("file", null, classPath.getCanonicalPath() + File.separator)).toString();
-            urls[0] = new URL(null, repository, streamHandler);
-            loader = new URLClassLoader(urls);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
         log("Container created.");
     }
 
     public void start() {
+        Logger logger = new FileLogger();
+        setLogger(logger);
+
+        FilterDef filterDef = new FilterDef();
+        filterDef.setFilterName("TestFilter");
+        filterDef.setFilterClass("test.TestFilter");
+        addFilterDef(filterDef);
+        FilterMap filterMap = new FilterMap();
+        filterMap.setFilterName("TestFilter");
+        filterMap.setUrlPattern("/*");
+        addFilterMap(filterMap);
+        filterStart();
+
+        ContainerListenerDef listenerDef = new ContainerListenerDef();
+        listenerDef.setListenerName("TestListener");
+        listenerDef.setListenerClass("test.TestListener");
+        addListenerDef(listenerDef);
+        listenerStart();
         fireContainerEvent("Container started.", this);
     }
 
@@ -83,9 +92,9 @@ public class StandardContext extends ContainerBase implements Context {
                 ContainerListener listener = null;
 
                 String listenerClass = def.getListenerClass();
-                ClassLoader classLoader = this.getLoader();
+                WebappClassLoader classLoader = (WebappClassLoader) this.getLoader();
                 try {
-                    Class<?> clazz = classLoader.loadClass(listenerClass);
+                    Class<?> clazz = classLoader.getClassLoader().loadClass(listenerClass);
                     listener = (ContainerListener) clazz.newInstance();
                     addContainerListener(listener);
                 } catch (ClassNotFoundException | InstantiationException | IllegalAccessException e) {
@@ -113,17 +122,6 @@ public class StandardContext extends ContainerBase implements Context {
         synchronized (listenerDefs) {
             listenerDefs.add(listenerDef);
         }
-    }
-
-
-    public Wrapper getWrapper(String name) {
-        StandardWrapper servletWrapper = servletInstanceMap.get(name);
-        if (servletWrapper == null) {
-            servletWrapper = new StandardWrapper(name, this);
-            this.servletClassMap.put(name, name);
-            this.servletInstanceMap.put(name, servletWrapper);
-        }
-        return servletWrapper;
     }
 
     public void addFilterDef(FilterDef filterDef) {
@@ -231,6 +229,17 @@ public class StandardContext extends ContainerBase implements Context {
         return urlPattern.startsWith("/");
     }
 
+    public Wrapper getWrapper(String name) {
+        StandardWrapper servletWrapper = servletInstanceMap.get(name);
+        if (servletWrapper == null) {
+            servletWrapper = new StandardWrapper(name, this);
+            this.servletClassMap.put(name, name);
+            this.servletInstanceMap.put(name, servletWrapper);
+        }
+        return servletWrapper;
+    }
+
+
     @Override
     public String getInfo() {
         return "My Servlet com.mytomcat.Context, version 0.1";
@@ -271,12 +280,12 @@ public class StandardContext extends ContainerBase implements Context {
 
     @Override
     public String getDocBase() {
-        return null;
+        return this.docBase;
     }
 
     @Override
     public void setDocBase(String docBase) {
-
+        this.docBase = docBase;
     }
 
     @Override

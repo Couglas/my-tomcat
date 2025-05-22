@@ -1,12 +1,8 @@
 package com.mytomcat.startup;
 
-import com.mytomcat.Logger;
 import com.mytomcat.connector.http.HttpConnector;
-import com.mytomcat.core.ContainerListenerDef;
-import com.mytomcat.core.FilterDef;
-import com.mytomcat.core.FilterMap;
-import com.mytomcat.core.StandardContext;
-import com.mytomcat.logger.FileLogger;
+import com.mytomcat.core.StandardHost;
+import com.mytomcat.core.WebappClassLoader;
 
 import java.io.File;
 
@@ -25,33 +21,15 @@ public class Bootstrap {
         if (debug >= 1) {
             log("... my tomcat start up ...");
         }
+        System.setProperty("mytomcat.base", WEB_ROOT);
         HttpConnector connector = new HttpConnector();
-        StandardContext container = new StandardContext();
+        StandardHost container = new StandardHost();
+        WebappClassLoader loader = new WebappClassLoader();
+        loader.start();
+        container.setLoader(loader);
         connector.setContainer(container);
         container.setConnector(connector);
-
-        Logger logger = new FileLogger();
-        container.setLogger(logger);
-
-        FilterDef filterDef = new FilterDef();
-        filterDef.setFilterName("TestFilter");
-        filterDef.setFilterClass("test.TestFilter");
-        container.addFilterDef(filterDef);
-
-        FilterMap filterMap = new FilterMap();
-        filterMap.setFilterName("TestFilter");
-        filterMap.setUrlPattern("/*");
-        container.addFilterMap(filterMap);
-        container.filterStart();
-
-        ContainerListenerDef listenerDef = new ContainerListenerDef();
-        listenerDef.setListenerName("TestListener");
-        listenerDef.setListenerClass("test.TestListener");
-        container.addListenerDef(listenerDef);
-
-        container.listenerStart();
         container.start();
-
         connector.start();
 
     }

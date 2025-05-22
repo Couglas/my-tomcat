@@ -38,10 +38,19 @@ public class HttpRequestImpl implements HttpServletRequest, Request {
     private StandardSessionFacade sessionFacade;
     private Cookie[] cookies;
     private HttpResponseImpl response;
+    private String docbase;
 
     public HttpRequestImpl(InputStream input) {
         this.input = input;
         this.sis = new SocketInputStream(this.input, 2048);
+    }
+
+    public String getDocbase() {
+        return docbase;
+    }
+
+    public void setDocbase(String docbase) {
+        this.docbase = docbase;
     }
 
     @Override
@@ -189,6 +198,12 @@ public class HttpRequestImpl implements HttpServletRequest, Request {
         if (semicolon >= 0) {
             sessionid = uri.substring(semicolon + jsessionid.length());
             uri = uri.substring(0, semicolon);
+        }
+
+        int contextSlash = uri.indexOf("/", 1);
+        if (contextSlash != -1) {
+            this.docbase = uri.substring(1, contextSlash);
+            uri = uri.substring(contextSlash);
         }
     }
 

@@ -121,7 +121,14 @@ listener和filter类似，都是通过配置加载到容器中，当触发某个
 1. 新增ContainerEvent事件：实现EventObject
 2. 新增ContainerListener接口：提供触发事件方法
 3. StandardContext内部维护List<ContainerListener>，创建容器后触发事件监听
+# 支持多应用
+大致思路是使用不同的类加载器去加载类，对JVM来说判断一个类是否相同是根据类加载器名称+类型，这样从底层就隔离开不同的应用了。解析url，根据路径创建不同的类加载器，加载对应路径下的类，也就是做到了区分不同的应用。
 
+为了实现这个逻辑，需要一个容器来管理StandardContext，并为每个StandardContext创建其对应的类加载器，之后用到该context时直接从容器中获取即可，之后的流程就和之前是相同的了。
+1. 新增StandardHost：实现ContainerBase，内部维护StandardContext，根据需要创建
+2. 新增StandardHostValve：继承ValveBase，实现根据url解析的路径创建相应的StandardContext，然后调用context.invoke
+3. 新增WebappClassLoader：实现加载不同路径下的类的类加载器
+4. 修改Bootstrap，启动时创建StandardHost，由它来作为整个容器流程的起点，即StandardHost -> StandardHostValve -> StandardContext -> StandardContextValve -> StandardWrapper -> StandardWrapperValve -> servlet.service
 
 
 

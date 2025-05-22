@@ -57,8 +57,8 @@ public class ApplicationFilterConfig implements FilterConfig {
         }
 
         String filterClass = filterDef.getFilterClass();
-        ClassLoader classLoader = context.getLoader();
-        Class<?> clazz = classLoader.loadClass(filterClass);
+        WebappClassLoader classLoader = (WebappClassLoader) context.getLoader();
+        Class<?> clazz = classLoader.getClassLoader().loadClass(filterClass);
         this.filter = (Filter) clazz.newInstance();
         filter.init(this);
 
