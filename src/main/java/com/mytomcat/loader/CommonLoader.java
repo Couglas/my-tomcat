@@ -1,4 +1,4 @@
-package com.mytomcat.core;
+package com.mytomcat.loader;
 
 import com.mytomcat.Container;
 import com.mytomcat.Loader;
@@ -9,30 +9,28 @@ import java.net.URL;
 import java.net.URLStreamHandler;
 
 /**
- * web应用加载器
+ * 通用加载器
  *
  * @author zhenxingchen4
  * @since 2025/5/29
  */
-public class WebappLoader implements Loader {
+public class CommonLoader implements Loader {
     private ClassLoader classLoader;
     private ClassLoader parent;
     private String path;
     private String docBase;
     private Container container;
 
-    public WebappLoader(String docBase) {
-        this.docBase = docBase;
+    public CommonLoader() {
     }
 
-    public WebappLoader(String docBase, ClassLoader parent) {
+    public CommonLoader(ClassLoader parent) {
         this.parent = parent;
-        this.docBase = docBase;
     }
 
     @Override
     public Container getContainer() {
-        return this.container;
+        return container;
     }
 
     @Override
@@ -62,17 +60,16 @@ public class WebappLoader implements Loader {
 
     @Override
     public ClassLoader getClassLoader() {
-        return this.classLoader;
+        return classLoader;
     }
 
     @Override
     public String getInfo() {
-        return "WebappLoader..";
+        return "CommonLoader..";
     }
 
     @Override
     public void addRepository(String repository) {
-
     }
 
     @Override
@@ -82,19 +79,17 @@ public class WebappLoader implements Loader {
 
     @Override
     public synchronized void start() {
-        System.out.println("Starting webapp loader, docBase: " + docBase);
+        System.out.println("Starting common loader, docBase: " + docBase);
+
         try {
             URL[] urls = new URL[1];
             URLStreamHandler streamHandler = null;
-            File classPath = new File(System.getProperty("mytomcat.base"));
+            File classPath = new File(System.getProperty("mytomcat.home"));
             String repository = (new URL("file", null, classPath.getCanonicalPath() + File.separator)).toString();
-            if (docBase != null && !docBase.isEmpty()) {
-                repository = repository + docBase + File.separator;
-            }
-            repository = repository + "WEB-INF" + File.separator + "classes" + File.separator;
+            repository = repository + "lib" + File.separator;
             urls[0] = new URL(null, repository, streamHandler);
-            System.out.println("Webapp ClassLoader repository: " + repository);
-            classLoader = new WebappClassLoader(urls, parent);
+            System.out.println("Common classLoader repository: " + repository);
+            classLoader = new CommonClassLoader(urls);
         } catch (IOException e) {
             e.printStackTrace();
         }

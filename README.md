@@ -142,7 +142,8 @@ listener和filter类似，都是通过配置加载到容器中，当触发某个
 4. 新增CommonClassLoader类：重写类加载流程
 5. 新增WebappClassLoader类：重写类加载流程
 
-
+# 新增配置文件
+参考tomcat的server.xml和web.xml，新增两个文件。简单思路就是读取两个配置文件的元素读取相应配置，替换之前写死的逻辑。
 
 
 

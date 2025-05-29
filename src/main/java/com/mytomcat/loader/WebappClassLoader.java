@@ -1,41 +1,41 @@
-package com.mytomcat.core;
+package com.mytomcat.loader;
 
 import java.net.URL;
 import java.net.URLClassLoader;
 
 /**
- * 通用类加载器
+ * web应用类加载器
  *
  * @author zhenxingchen4
- * @since 2025/5/29
+ * @since 2025/5/22
  */
-public class CommonClassLoader extends URLClassLoader {
+public class WebappClassLoader extends URLClassLoader {
     protected boolean delegate = false;
     private ClassLoader parent;
     private ClassLoader system;
 
-    public CommonClassLoader() {
+    public WebappClassLoader() {
         super(new URL[0]);
         this.parent = getParent();
         system = getSystemClassLoader();
     }
 
-    public CommonClassLoader(URL[] urls) {
+    public WebappClassLoader(URL[] urls) {
         super(urls);
         this.parent = getParent();
         system = getSystemClassLoader();
     }
 
-    public CommonClassLoader(ClassLoader parent) {
+    public WebappClassLoader(ClassLoader parent) {
         super(new URL[0], parent);
         this.parent = parent;
         system = getSystemClassLoader();
     }
 
-    public CommonClassLoader(URL[] urls, ClassLoader parent) {
+    public WebappClassLoader(URL[] urls, ClassLoader parent) {
         super(urls, parent);
         this.parent = parent;
-        this.system = getSystemClassLoader();
+        system = getSystemClassLoader();
     }
 
     public boolean isDelegate() {
@@ -47,13 +47,14 @@ public class CommonClassLoader extends URLClassLoader {
     }
 
     @Override
-    public Class<?> findClass(String name) throws ClassNotFoundException {
-        Class<?> clazz;
+    protected Class<?> findClass(String name) throws ClassNotFoundException {
+        Class<?> clazz = null;
         try {
             clazz = super.findClass(name);
         } catch (RuntimeException e) {
-            throw e;
+            e.printStackTrace();
         }
+
         if (clazz == null) {
             throw new ClassNotFoundException(name);
         }
@@ -66,9 +67,9 @@ public class CommonClassLoader extends URLClassLoader {
         return loadClass(name, false);
     }
 
-    public Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
-        Class<?> clazz;
-
+    @Override
+    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException {
+        Class<?> clazz = null;
         try {
             clazz = system.loadClass(name);
             if (clazz != null) {
@@ -87,6 +88,7 @@ public class CommonClassLoader extends URLClassLoader {
             if (loader == null) {
                 loader = system;
             }
+
             try {
                 clazz = loader.loadClass(name);
                 if (clazz != null) {
@@ -117,6 +119,7 @@ public class CommonClassLoader extends URLClassLoader {
             if (loader == null) {
                 loader = system;
             }
+
             try {
                 clazz = loader.loadClass(name);
                 if (clazz != null) {
@@ -134,11 +137,11 @@ public class CommonClassLoader extends URLClassLoader {
     }
 
     private void log(String message) {
-        System.out.println("CommonClassLoader: " + message);
+        System.out.println("WebappClassLoader: " + message);
     }
 
     private void log(String message, Throwable throwable) {
-        System.out.println("CommonClassLoader: " + message);
+        System.out.println("WebappClassLoader: " + message);
         throwable.printStackTrace(System.out);
     }
 }

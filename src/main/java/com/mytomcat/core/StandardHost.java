@@ -2,9 +2,11 @@ package com.mytomcat.core;
 
 import com.mytomcat.*;
 import com.mytomcat.connector.http.HttpConnector;
+import com.mytomcat.loader.WebappLoader;
 import com.mytomcat.logger.FileLogger;
 
 import javax.servlet.ServletException;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -53,6 +55,7 @@ public class StandardHost extends ContainerBase {
     public StandardContext getContext(String name) {
         StandardContext context = contextMap.get(name);
         if (context == null) {
+            System.out.println("loading context: " + name);
             context = new StandardContext();
             context.setDocBase(name);
             context.setConnector(connector);
@@ -77,6 +80,13 @@ public class StandardHost extends ContainerBase {
 //        listenerDef.setListenerClass("test.TestListener");
 //        addListenerDef(listenerDef);
         listenerStart();
+
+        File classPath = new File(System.getProperty("mytomcat.base"));
+        String[] dirs = classPath.list();
+        for (int i = 0; i < dirs.length; i++) {
+            getContext(dirs[i]);
+        }
+
     }
 
     public boolean listenerStart() {
