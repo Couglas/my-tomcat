@@ -15,9 +15,9 @@ public interface Container {
 
     String getInfo();
 
-    ClassLoader getLoader();
+    Loader getLoader();
 
-    void setLoader(ClassLoader loader);
+    void setLoader(Loader loader);
 
     String getName();
 

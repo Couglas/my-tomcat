@@ -56,11 +56,12 @@ public class StandardHost extends ContainerBase {
             context = new StandardContext();
             context.setDocBase(name);
             context.setConnector(connector);
-            WebappClassLoader loader = new WebappClassLoader();
-            loader.setDocbase(name);
+
+            Loader loader = new WebappLoader(name, this.loader.getClassLoader());
             context.setLoader(loader);
             loader.start();
             context.start();
+
             this.contextMap.put(name, context);
         }
 
@@ -68,14 +69,14 @@ public class StandardHost extends ContainerBase {
     }
 
     public void start() {
+        fireContainerEvent("Host started", this);
         Logger logger = new FileLogger();
         setLogger(logger);
-        ContainerListenerDef listenerDef = new ContainerListenerDef();
-        listenerDef.setListenerName("TestListener");
-        listenerDef.setListenerClass("test.TestListener");
-        addListenerDef(listenerDef);
+//        ContainerListenerDef listenerDef = new ContainerListenerDef();
+//        listenerDef.setListenerName("TestListener");
+//        listenerDef.setListenerClass("test.TestListener");
+//        addListenerDef(listenerDef);
         listenerStart();
-        fireContainerEvent("Host started", this);
     }
 
     public boolean listenerStart() {
@@ -88,7 +89,7 @@ public class StandardHost extends ContainerBase {
                 ContainerListenerDef def = defs.next();
                 ContainerListener listener = null;
                 String listenerClass = def.getListenerClass();
-                WebappClassLoader classLoader = (WebappClassLoader) this.getLoader();
+                Loader classLoader = this.getLoader();
                 try {
                     Class<?> clazz = classLoader.getClassLoader().loadClass(listenerClass);
                     listener = (ContainerListener) clazz.newInstance();

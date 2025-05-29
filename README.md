@@ -129,8 +129,18 @@ listener和filter类似，都是通过配置加载到容器中，当触发某个
 2. 新增StandardHostValve：继承ValveBase，实现根据url解析的路径创建相应的StandardContext，然后调用context.invoke
 3. 新增WebappClassLoader：实现加载不同路径下的类的类加载器
 4. 修改Bootstrap，启动时创建StandardHost，由它来作为整个容器流程的起点，即StandardHost -> StandardHostValve -> StandardContext -> StandardContextValve -> StandardWrapper -> StandardWrapperValve -> servlet.service
+# 自定义类加载器
+基于以下几点的考虑，不能沿用类加载的默认双亲委派模型，需要自定义类加载器加载所需的类：
+1. 应用之间类隔离，不同的应用使用同一个类是可以的，这个类还可以有不同版本，不应该冲突。
+2. 不同应用之间可以共享某些基础包。
+3. 应用与MyTomcat本身的类应该互相不干扰。
 
-
+创建提供两个类加载器，一个专门加载公共类，一个专门加载应用类，并且重写加载流程
+1. 新增Loader接口：定义自定义加载器的方法
+2. 新增CommonLoader类：只加载公共类（默认放在/lib下的类）
+3. 新增WebappLoader类：重写类加载流程，加载不同应用的类，根据docbase区分，即加载放在webapps/docbase/WEB-INF/classes/下的类
+4. 新增CommonClassLoader类：重写类加载流程
+5. 新增WebappClassLoader类：重写类加载流程
 
 
 

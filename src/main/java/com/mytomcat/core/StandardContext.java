@@ -3,16 +3,11 @@ package com.mytomcat.core;
 import com.mytomcat.*;
 import com.mytomcat.connector.http.HttpConnector;
 import com.mytomcat.logger.FileLogger;
-import com.mytomcat.startup.Bootstrap;
 
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
-import java.io.File;
 import java.io.IOException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.net.URLStreamHandler;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -27,7 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class StandardContext extends ContainerBase implements Context {
     private HttpConnector connector = null;
-    private ClassLoader loader = null;
     private Map<String, String> servletClassMap = new ConcurrentHashMap<>();
     private Map<String, StandardWrapper> servletInstanceMap = new ConcurrentHashMap<>();
     private Map<String, ApplicationFilterConfig> filterConfigs = new ConcurrentHashMap<>();
@@ -35,7 +29,6 @@ public class StandardContext extends ContainerBase implements Context {
     private FilterMap filterMaps[] = new FilterMap[0];
     private List<ContainerListenerDef> listenerDefs = new ArrayList<>();
     private List<ContainerListener> listeners = new ArrayList<>();
-    private String docBase;
 
     public StandardContext() {
         super();
@@ -92,7 +85,7 @@ public class StandardContext extends ContainerBase implements Context {
                 ContainerListener listener = null;
 
                 String listenerClass = def.getListenerClass();
-                WebappClassLoader classLoader = (WebappClassLoader) this.getLoader();
+                Loader classLoader = this.getLoader();
                 try {
                     Class<?> clazz = classLoader.getClassLoader().loadClass(listenerClass);
                     listener = (ContainerListener) clazz.newInstance();
@@ -243,16 +236,6 @@ public class StandardContext extends ContainerBase implements Context {
     @Override
     public String getInfo() {
         return "My Servlet com.mytomcat.Context, version 0.1";
-    }
-
-    @Override
-    public ClassLoader getLoader() {
-        return this.loader;
-    }
-
-    @Override
-    public void setLoader(ClassLoader loader) {
-        this.loader = loader;
     }
 
     public HttpConnector getConnector() {

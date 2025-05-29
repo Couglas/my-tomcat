@@ -15,10 +15,12 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public abstract class ContainerBase implements Container, Pipeline {
     protected final Map<String, Container> children = new ConcurrentHashMap<>();
-    protected ClassLoader loader = null;
+    protected Loader loader = null;
     protected String name = null;
     protected Container parent = null;
     protected Logger logger = null;
+    protected String path;
+    protected String docBase;
     protected Pipeline pipeline = new StandardPipeline(this);
 
     public Pipeline getPipeline() {
@@ -57,7 +59,7 @@ public abstract class ContainerBase implements Container, Pipeline {
     }
 
     @Override
-    public ClassLoader getLoader() {
+    public Loader getLoader() {
         if (loader != null) {
             return loader;
         }
@@ -68,7 +70,10 @@ public abstract class ContainerBase implements Container, Pipeline {
     }
 
     @Override
-    public synchronized void setLoader(ClassLoader loader) {
+    public synchronized void setLoader(Loader loader) {
+        loader.setPath(path);
+        loader.setDocBase(docBase);
+        loader.setContainer(this);
         if (loader == this.loader) {
             return;
         }

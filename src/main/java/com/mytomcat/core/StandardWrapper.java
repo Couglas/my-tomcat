@@ -1,9 +1,6 @@
 package com.mytomcat.core;
 
-import com.mytomcat.Container;
-import com.mytomcat.Request;
-import com.mytomcat.Response;
-import com.mytomcat.Wrapper;
+import com.mytomcat.*;
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
@@ -92,7 +89,7 @@ public class StandardWrapper extends ContainerBase implements Wrapper {
         if (servletClass == null) {
             throw new ServletException("Servlet class not specified");
         }
-        WebappClassLoader classLoader = (WebappClassLoader) getLoader();
+        Loader classLoader = getLoader();
         Class<?> clazz = null;
         try {
             if (classLoader != null) {

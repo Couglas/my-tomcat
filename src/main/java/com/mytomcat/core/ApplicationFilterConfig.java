@@ -1,6 +1,7 @@
 package com.mytomcat.core;
 
 import com.mytomcat.Context;
+import com.mytomcat.Loader;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterConfig;
@@ -57,7 +58,7 @@ public class ApplicationFilterConfig implements FilterConfig {
         }
 
         String filterClass = filterDef.getFilterClass();
-        WebappClassLoader classLoader = (WebappClassLoader) context.getLoader();
+        Loader classLoader = context.getLoader();
         Class<?> clazz = classLoader.getClassLoader().loadClass(filterClass);
         this.filter = (Filter) clazz.newInstance();
         filter.init(this);
